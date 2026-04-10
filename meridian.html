@@ -573,6 +573,91 @@
             color: var(--ink-muted);
         }
 
+        /* Company sub-rows */
+        .breakdown-table tr.market-row { cursor: pointer; }
+        .breakdown-table tr.market-row:hover td { background: rgba(201,168,76,0.05); }
+        .expand-btn {
+            display: inline-flex; align-items: center; justify-content: center;
+            width: 18px; height: 18px; border-radius: 3px;
+            background: var(--border-light); color: var(--ink-faint);
+            font-size: 10px; font-family: 'IBM Plex Mono', monospace;
+            margin-right: 6px; flex-shrink: 0; transition: background 0.15s;
+        }
+        .market-row.expanded .expand-btn { background: var(--gold-light); color: var(--gold-dark); }
+        .company-sub-rows { display: none; }
+        .company-sub-rows.open { display: table-row-group; }
+        .company-sub-row td {
+            padding: 6px 10px 6px 38px !important;
+            border-bottom: 1px solid var(--border-light) !important;
+            background: rgba(245,242,235,0.6);
+        }
+        .company-sub-row .co-ticker {
+            font-family: 'IBM Plex Mono', monospace; font-size: 11px;
+            font-weight: 500; color: var(--gold-dark); min-width: 52px;
+        }
+        .company-sub-row .co-name {
+            font-size: 11px; color: var(--ink-muted);
+        }
+        .company-sub-row .co-amount {
+            font-family: 'IBM Plex Mono', monospace; font-size: 11px;
+            color: var(--ink); text-align: right;
+        }
+        .totals-row td {
+            border-top: 2px solid var(--border) !important;
+            padding-top: 12px !important;
+            font-weight: 600;
+        }
+        .totals-row .total-label {
+            font-family: 'IBM Plex Mono', monospace; font-size: 10px;
+            letter-spacing: 0.1em; text-transform: uppercase; color: var(--ink-faint);
+        }
+        .totals-row .total-amount {
+            font-family: 'IBM Plex Mono', monospace; font-size: 14px;
+            font-weight: 600; color: var(--gold-dark);
+        }
+
+        /* Phased schedule */
+        .phased-panel {
+            margin-top: 28px;
+            background: var(--card-bg);
+            border: 1px solid var(--border);
+            border-radius: var(--radius-lg);
+            padding: 24px;
+            box-shadow: var(--shadow-sm);
+        }
+        .phased-panel h4 {
+            font-family: 'Playfair Display', serif;
+            font-size: 16px; font-weight: 600;
+            margin-bottom: 4px;
+        }
+        .phased-subtitle {
+            font-size: 12px; color: var(--ink-faint); margin-bottom: 20px;
+        }
+        .phased-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+            gap: 12px;
+        }
+        .phased-market {
+            border: 1px solid var(--border-light);
+            border-radius: 8px;
+            padding: 14px;
+            background: var(--bg);
+        }
+        .phased-market-name {
+            font-size: 11px; font-weight: 600; margin-bottom: 10px;
+            display: flex; align-items: center; gap: 6px;
+        }
+        .phased-row {
+            display: flex; justify-content: space-between;
+            align-items: center; padding: 4px 0;
+            border-bottom: 1px solid var(--border-light);
+            font-size: 11px;
+        }
+        .phased-row:last-child { border-bottom: none; }
+        .phased-month { color: var(--ink-faint); }
+        .phased-amt  { font-family: 'IBM Plex Mono', monospace; font-weight: 500; color: var(--ink); }
+
         /* Chart panel */
         .chart-panel {
             background: var(--card-bg);
@@ -860,7 +945,7 @@
                                         <th>Entry Strategy</th>
                                     </tr>
                                 </thead>
-                                <tbody id="breakdown-tbody"></tbody>
+                                <!-- tbodies injected dynamically -->
                             </table>
                         </div>
                     </div>
@@ -870,6 +955,12 @@
                         <svg id="allocation-chart" width="220" height="220" viewBox="0 0 220 220"></svg>
                         <div class="chart-legend" id="chart-legend"></div>
                     </div>
+                </div>
+                <!-- Phased Schedule -->
+                <div id="phased-section" class="phased-panel hidden">
+                    <h4>Phased Investment Schedule</h4>
+                    <div class="phased-subtitle">Monthly deployment plan based on each market's recommended entry strategy</div>
+                    <div class="phased-grid" id="phased-grid"></div>
                 </div>
             </div>
         </div>
@@ -1285,31 +1376,125 @@ function buildMarketCard(m, i) {
 // ── Portfolio Calculator ──────────────────────────────────
 function updatePortfolio() {
     if (!state.data?.markets) return;
-    const total = parseFloat(document.getElementById('amount-input').value) || 0;
+    const total    = parseFloat(document.getElementById('amount-input').value) || 0;
     const currency = document.getElementById('currency-select').value;
-    const symbol = CURRENCY_SYMBOLS[currency] || currency;
-    const markets = state.data.markets;
+    const symbol   = CURRENCY_SYMBOLS[currency] || currency;
+    const markets  = state.data.markets;
 
-    const tbody = document.getElementById('breakdown-tbody');
-    tbody.innerHTML = '';
+    // Re-build entire table each time (clear old tbodies too)
+    const table = document.getElementById('breakdown-table');
+    // Remove all tbodies
+    Array.from(table.querySelectorAll('tbody')).forEach(b => b.remove());
+
     markets.forEach((m, i) => {
-        const amount = (m.allocation_pct / 100) * total;
-        const color = CHART_COLORS[i % CHART_COLORS.length];
+        const mktAmount  = (m.allocation_pct / 100) * total;
+        const color      = CHART_COLORS[i % CHART_COLORS.length];
+        const companies  = m.companies || [];
+        const subId      = `sub-${i}`;
+
+        // ── Main tbody for this market ──────────────────────
+        const tBody = document.createElement('tbody');
+
+        // Market row
         const tr = document.createElement('tr');
+        tr.className = 'market-row';
         tr.innerHTML = `
             <td>
                 <div class="market-name">
+                    <span class="expand-btn">+</span>
                     <span class="flag-sm">${m.flag}</span>
                     <span style="color:${color};font-weight:600">${m.country}</span>
                 </div>
             </td>
             <td class="pct-cell">${m.allocation_pct}%</td>
-            <td class="amount-cell">${symbol}${formatAmount(amount)}</td>
+            <td class="amount-cell">${symbol}${formatAmount(mktAmount)}</td>
             <td class="strategy-cell">${m.entry_strategy || '—'}</td>`;
-        tbody.appendChild(tr);
+
+        // Company sub-rows (hidden by default)
+        const subRows = [];
+        if (companies.length > 0) {
+            const perCo = mktAmount / companies.length;
+            companies.forEach(c => {
+                const sr = document.createElement('tr');
+                sr.className = 'company-sub-row';
+                sr.style.display = 'none';
+                sr.innerHTML = `
+                    <td colspan="2">
+                        <div style="display:flex;align-items:center;gap:10px;padding-left:28px">
+                            <span class="co-ticker">${c.ticker}</span>
+                            <span class="co-name">${c.name}</span>
+                        </div>
+                    </td>
+                    <td class="co-amount">${symbol}${formatAmount(perCo)}</td>
+                    <td class="strategy-cell" style="font-size:10px">${c.conviction || ''} conviction</td>`;
+                subRows.push(sr);
+            });
+        }
+
+        tr.addEventListener('click', () => {
+            const open = subRows.some(r => r.style.display !== 'none');
+            subRows.forEach(r => { r.style.display = open ? 'none' : ''; });
+            tr.classList.toggle('expanded', !open);
+            tr.querySelector('.expand-btn').textContent = open ? '+' : '−';
+        });
+
+        tBody.appendChild(tr);
+        subRows.forEach(r => tBody.appendChild(r));
+        table.appendChild(tBody);
     });
 
+    // ── Totals tbody ────────────────────────────────────────
+    const tFoot = document.createElement('tbody');
+    const totalRow = document.createElement('tr');
+    totalRow.className = 'totals-row';
+    totalRow.innerHTML = `
+        <td colspan="2"><span class="total-label">Total Portfolio</span></td>
+        <td colspan="2"><span class="total-amount">${symbol}${formatAmount(total)}</span></td>`;
+    tFoot.appendChild(totalRow);
+    table.appendChild(tFoot);
+
     drawChart(markets);
+    renderPhasedSchedule(markets, total, symbol);
+}
+
+// ── Phased Investment Schedule ────────────────────────────
+function renderPhasedSchedule(markets, total, symbol) {
+    const section = document.getElementById('phased-section');
+    const grid    = document.getElementById('phased-grid');
+    grid.innerHTML = '';
+
+    const phased = markets.filter(m => m.entry_strategy && m.entry_strategy.toLowerCase().includes('phased'));
+    if (!phased.length || !total) { section.classList.add('hidden'); return; }
+    section.classList.remove('hidden');
+
+    phased.forEach((m, i) => {
+        const mktAmount = (m.allocation_pct / 100) * total;
+        const color = CHART_COLORS[markets.indexOf(m) % CHART_COLORS.length];
+
+        // Parse number of months from entry_strategy string
+        const monthMatch = m.entry_strategy.match(/(\d+)\s*months?/i);
+        const months = monthMatch ? parseInt(monthMatch[1]) : 6;
+        const monthly = mktAmount / months;
+
+        const card = document.createElement('div');
+        card.className = 'phased-market';
+        card.style.borderTop = `2px solid ${color}`;
+
+        let rows = `<div class="phased-market-name"><span>${m.flag}</span><span>${m.country}</span></div>`;
+        for (let mo = 1; mo <= months; mo++) {
+            rows += `
+                <div class="phased-row">
+                    <span class="phased-month">Month ${mo}</span>
+                    <span class="phased-amt">${symbol}${formatAmount(monthly)}</span>
+                </div>`;
+        }
+        rows += `<div class="phased-row" style="margin-top:6px;font-weight:600">
+            <span class="phased-month" style="color:var(--ink)">Total</span>
+            <span class="phased-amt" style="color:var(--gold-dark)">${symbol}${formatAmount(mktAmount)}</span>
+        </div>`;
+        card.innerHTML = rows;
+        grid.appendChild(card);
+    });
 }
 
 function formatAmount(n) {
