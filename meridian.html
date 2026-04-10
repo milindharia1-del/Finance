@@ -1,0 +1,900 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MERIDIAN — Global Investment Intelligence</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,600;0,700;1,400&family=IBM+Plex+Mono:wght@300;400;500&family=IBM+Plex+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
+    <style>
+        *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+        :root {
+            --bg:           #f5f2eb;
+            --bg-light:     #faf7f2;
+            --card-bg:      #fdf9f3;
+            --ink:          #0a0a0f;
+            --ink-muted:    #4a4540;
+            --ink-faint:    #8a8278;
+            --gold:         #c9a84c;
+            --gold-light:   #e8d5a3;
+            --gold-dark:    #a07c30;
+            --border:       #d4c9b0;
+            --border-light: #ece5d6;
+            --bullish:      #1a5c3a;
+            --bullish-bg:   #eaf4ef;
+            --cautious:     #8b1f24;
+            --cautious-bg:  #fbeaea;
+            --neutral-c:    #5c4f38;
+            --neutral-bg:   #f2ede4;
+            --shadow-sm:    0 1px 4px rgba(10,10,15,0.07);
+            --shadow:       0 2px 10px rgba(10,10,15,0.09);
+            --shadow-lg:    0 6px 24px rgba(10,10,15,0.12);
+            --radius:       6px;
+            --radius-lg:    10px;
+        }
+
+        /* ── Base ─────────────────────────────────────── */
+        body {
+            font-family: 'IBM Plex Sans', system-ui, sans-serif;
+            background: var(--bg);
+            color: var(--ink);
+            min-height: 100vh;
+            line-height: 1.65;
+            font-size: 15px;
+        }
+
+        h1, h2, h3, h4 { font-family: 'Playfair Display', Georgia, serif; line-height: 1.25; }
+        .mono { font-family: 'IBM Plex Mono', monospace; }
+
+        a { color: var(--gold-dark); text-decoration: none; }
+        a:hover { text-decoration: underline; }
+
+        /* ── Layout helpers ───────────────────────────── */
+        .container {
+            max-width: 1360px;
+            margin: 0 auto;
+            padding: 0 24px;
+        }
+
+        .section { padding: 40px 0; }
+        .section + .section { border-top: 1px solid var(--border-light); }
+
+        /* ── API Key Modal ────────────────────────────── */
+        #api-modal {
+            position: fixed; inset: 0;
+            background: rgba(10,10,15,0.72);
+            display: flex; align-items: center; justify-content: center;
+            z-index: 1000;
+            backdrop-filter: blur(4px);
+        }
+        #api-modal.hidden { display: none; }
+
+        .modal-box {
+            background: var(--card-bg);
+            border: 1px solid var(--border);
+            border-radius: var(--radius-lg);
+            padding: 40px 48px;
+            max-width: 480px; width: 100%;
+            box-shadow: var(--shadow-lg);
+        }
+        .modal-box .modal-eyebrow {
+            font-family: 'IBM Plex Mono', monospace;
+            font-size: 10px;
+            letter-spacing: 0.18em;
+            text-transform: uppercase;
+            color: var(--gold);
+            margin-bottom: 12px;
+        }
+        .modal-box h2 { font-size: 26px; margin-bottom: 10px; }
+        .modal-box p { color: var(--ink-muted); font-size: 14px; margin-bottom: 24px; line-height: 1.6; }
+
+        .modal-box input[type="password"],
+        .modal-box input[type="text"] {
+            width: 100%;
+            padding: 11px 14px;
+            border: 1px solid var(--border);
+            border-radius: var(--radius);
+            background: var(--bg);
+            font-family: 'IBM Plex Mono', monospace;
+            font-size: 13px;
+            color: var(--ink);
+            outline: none;
+            transition: border-color 0.2s;
+            margin-bottom: 14px;
+        }
+        .modal-box input:focus { border-color: var(--gold); }
+
+        .modal-hint {
+            font-size: 12px;
+            color: var(--ink-faint);
+            margin-bottom: 20px;
+        }
+
+        /* ── Buttons ──────────────────────────────────── */
+        .btn {
+            display: inline-flex; align-items: center; gap: 7px;
+            padding: 10px 20px;
+            border: none; border-radius: var(--radius);
+            font-family: 'IBM Plex Sans', sans-serif;
+            font-size: 13px; font-weight: 600;
+            cursor: pointer;
+            transition: all 0.18s;
+            letter-spacing: 0.02em;
+        }
+        .btn-gold {
+            background: var(--gold);
+            color: #fff;
+        }
+        .btn-gold:hover { background: var(--gold-dark); }
+        .btn-gold:disabled { opacity: 0.55; cursor: not-allowed; }
+
+        .btn-outline {
+            background: transparent;
+            border: 1px solid var(--border);
+            color: var(--ink-muted);
+        }
+        .btn-outline:hover { border-color: var(--gold); color: var(--ink); }
+
+        .btn-sm { padding: 7px 14px; font-size: 12px; }
+
+        /* ── Header ───────────────────────────────────── */
+        header {
+            border-bottom: 1px solid var(--border);
+            background: var(--bg);
+            position: sticky; top: 0;
+            z-index: 100;
+        }
+        .header-inner {
+            display: flex;
+            align-items: center;
+            gap: 24px;
+            padding: 0 24px;
+            height: 64px;
+            max-width: 1360px;
+            margin: 0 auto;
+        }
+        .logo-block { flex: 0 0 auto; }
+        .logo-wordmark {
+            font-family: 'Playfair Display', Georgia, serif;
+            font-size: 22px;
+            font-weight: 700;
+            letter-spacing: 0.12em;
+            color: var(--ink);
+        }
+        .logo-sub {
+            font-family: 'IBM Plex Mono', monospace;
+            font-size: 9px;
+            letter-spacing: 0.2em;
+            text-transform: uppercase;
+            color: var(--gold);
+            margin-top: -2px;
+        }
+
+        .header-divider {
+            width: 1px; height: 28px;
+            background: var(--border);
+            flex-shrink: 0;
+        }
+
+        /* Risk Toggle */
+        .risk-toggle {
+            display: flex;
+            gap: 2px;
+            background: var(--bg-light);
+            border: 1px solid var(--border);
+            border-radius: var(--radius);
+            padding: 3px;
+        }
+        .risk-btn {
+            padding: 5px 13px;
+            border: none; border-radius: 4px;
+            font-family: 'IBM Plex Mono', monospace;
+            font-size: 11px; font-weight: 500;
+            letter-spacing: 0.05em;
+            cursor: pointer;
+            background: transparent;
+            color: var(--ink-muted);
+            transition: all 0.15s;
+            text-transform: uppercase;
+        }
+        .risk-btn.active {
+            background: var(--gold);
+            color: #fff;
+        }
+        .risk-btn:not(.active):hover { color: var(--ink); }
+
+        .header-spacer { flex: 1; }
+
+        .header-meta {
+            display: flex; align-items: center; gap: 14px;
+        }
+        #last-updated {
+            font-family: 'IBM Plex Mono', monospace;
+            font-size: 11px;
+            color: var(--ink-faint);
+        }
+
+        /* ── Gold rule ────────────────────────────────── */
+        .gold-rule {
+            height: 1px;
+            background: linear-gradient(90deg, transparent, var(--gold-light), transparent);
+            margin: 0;
+        }
+
+        /* ── Section labels ───────────────────────────── */
+        .section-label {
+            font-family: 'IBM Plex Mono', monospace;
+            font-size: 10px;
+            letter-spacing: 0.2em;
+            text-transform: uppercase;
+            color: var(--gold);
+            margin-bottom: 16px;
+        }
+
+        /* ── Macro Summary ────────────────────────────── */
+        #macro-section { padding: 36px 0 32px; }
+
+        .macro-card {
+            background: var(--card-bg);
+            border: 1px solid var(--border);
+            border-radius: var(--radius-lg);
+            padding: 28px 32px;
+            box-shadow: var(--shadow-sm);
+        }
+        .macro-card h2 {
+            font-size: 13px;
+            font-family: 'IBM Plex Mono', monospace;
+            font-weight: 500;
+            letter-spacing: 0.15em;
+            text-transform: uppercase;
+            color: var(--gold);
+            margin-bottom: 14px;
+        }
+        .macro-summary-text {
+            font-size: 17px;
+            line-height: 1.7;
+            color: var(--ink);
+            font-style: italic;
+            font-family: 'Playfair Display', Georgia, serif;
+            font-weight: 400;
+            margin-bottom: 18px;
+            max-width: 900px;
+        }
+        .macro-themes {
+            display: flex; flex-wrap: wrap; gap: 8px;
+        }
+        .theme-tag {
+            font-family: 'IBM Plex Mono', monospace;
+            font-size: 11px;
+            padding: 4px 10px;
+            background: var(--bg);
+            border: 1px solid var(--border);
+            border-radius: 30px;
+            color: var(--ink-muted);
+        }
+
+        /* ── Market Grid ──────────────────────────────── */
+        #markets-section { padding: 32px 0 40px; }
+
+        .market-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(340px, 1fr));
+            gap: 20px;
+        }
+
+        /* ── Market Card ──────────────────────────────── */
+        .market-card {
+            background: var(--card-bg);
+            border: 1px solid var(--border);
+            border-radius: var(--radius-lg);
+            overflow: hidden;
+            box-shadow: var(--shadow-sm);
+            transition: box-shadow 0.2s, transform 0.2s, border-color 0.2s;
+            display: flex; flex-direction: column;
+        }
+        .market-card:hover {
+            box-shadow: var(--shadow-lg);
+            transform: translateY(-2px);
+            border-color: var(--gold-light);
+        }
+
+        .card-header {
+            padding: 18px 20px 14px;
+            border-bottom: 1px solid var(--border-light);
+            display: flex; align-items: flex-start; justify-content: space-between; gap: 12px;
+        }
+        .card-country {
+            display: flex; align-items: center; gap: 10px;
+        }
+        .card-flag { font-size: 26px; line-height: 1; }
+        .card-country-name {
+            font-family: 'Playfair Display', Georgia, serif;
+            font-size: 19px;
+            font-weight: 600;
+        }
+        .card-exchange {
+            font-family: 'IBM Plex Mono', monospace;
+            font-size: 10px;
+            color: var(--ink-faint);
+            letter-spacing: 0.08em;
+            margin-top: 2px;
+        }
+
+        .outlook-badge {
+            font-family: 'IBM Plex Mono', monospace;
+            font-size: 10px;
+            font-weight: 500;
+            letter-spacing: 0.08em;
+            text-transform: uppercase;
+            padding: 4px 10px;
+            border-radius: 30px;
+            white-space: nowrap;
+            flex-shrink: 0;
+        }
+        .outlook-badge.bullish  { background: var(--bullish-bg);  color: var(--bullish); }
+        .outlook-badge.neutral  { background: var(--neutral-bg);  color: var(--neutral-c); }
+        .outlook-badge.cautious { background: var(--cautious-bg); color: var(--cautious); }
+
+        .card-body { padding: 18px 20px; flex: 1; display: flex; flex-direction: column; gap: 16px; }
+
+        /* Confidence bar */
+        .card-meta-row {
+            display: flex; gap: 20px; align-items: center;
+        }
+        .meta-item { display: flex; flex-direction: column; gap: 3px; }
+        .meta-label {
+            font-family: 'IBM Plex Mono', monospace;
+            font-size: 9px;
+            letter-spacing: 0.15em;
+            text-transform: uppercase;
+            color: var(--ink-faint);
+        }
+        .meta-value {
+            font-family: 'IBM Plex Mono', monospace;
+            font-size: 14px;
+            font-weight: 500;
+            color: var(--ink);
+        }
+        .confidence-bar {
+            height: 4px;
+            background: var(--border-light);
+            border-radius: 2px;
+            overflow: hidden;
+            margin-top: 4px;
+            width: 80px;
+        }
+        .confidence-fill {
+            height: 100%;
+            border-radius: 2px;
+            background: var(--gold);
+            transition: width 0.6s ease;
+        }
+
+        /* Card sub-sections */
+        .card-sub-label {
+            font-family: 'IBM Plex Mono', monospace;
+            font-size: 9px;
+            letter-spacing: 0.18em;
+            text-transform: uppercase;
+            color: var(--gold);
+            margin-bottom: 8px;
+        }
+
+        /* Sectors */
+        .sector-list { display: flex; flex-direction: column; gap: 6px; }
+        .sector-item { display: flex; gap: 8px; align-items: flex-start; }
+        .sector-dot {
+            width: 5px; height: 5px;
+            border-radius: 50%;
+            background: var(--gold);
+            flex-shrink: 0;
+            margin-top: 6px;
+        }
+        .sector-name { font-size: 13px; font-weight: 600; color: var(--ink); }
+        .sector-rationale { font-size: 12px; color: var(--ink-muted); }
+
+        /* Companies */
+        .company-list { display: flex; flex-direction: column; gap: 10px; }
+        .company-row {
+            display: flex; align-items: flex-start; gap: 10px;
+            padding: 8px 10px;
+            background: var(--bg);
+            border-radius: var(--radius);
+            border: 1px solid var(--border-light);
+        }
+        .company-ticker {
+            font-family: 'IBM Plex Mono', monospace;
+            font-size: 12px;
+            font-weight: 500;
+            color: var(--gold-dark);
+            min-width: 52px;
+            flex-shrink: 0;
+        }
+        .company-info { flex: 1; }
+        .company-name { font-size: 13px; font-weight: 600; margin-bottom: 2px; }
+        .company-reason { font-size: 11px; color: var(--ink-muted); line-height: 1.45; }
+        .company-meta {
+            display: flex; gap: 6px; margin-top: 4px; flex-wrap: wrap;
+        }
+        .company-tag {
+            font-family: 'IBM Plex Mono', monospace;
+            font-size: 9px;
+            padding: 2px 6px;
+            border-radius: 3px;
+            background: var(--border-light);
+            color: var(--ink-faint);
+            letter-spacing: 0.06em;
+        }
+        .company-tag.high { background: var(--bullish-bg); color: var(--bullish); }
+        .company-tag.medium { background: var(--neutral-bg); color: var(--neutral-c); }
+
+        /* Why now */
+        .why-now-text {
+            font-size: 13px;
+            color: var(--ink-muted);
+            line-height: 1.55;
+            font-style: italic;
+            padding-left: 10px;
+            border-left: 2px solid var(--gold-light);
+        }
+
+        /* Risks */
+        .risk-list { display: flex; flex-direction: column; gap: 4px; }
+        .risk-item {
+            font-size: 12px;
+            color: var(--cautious);
+            display: flex; gap: 6px; align-items: flex-start;
+        }
+        .risk-item::before {
+            content: '↑';
+            font-size: 10px;
+            margin-top: 2px;
+            flex-shrink: 0;
+        }
+
+        /* Card footer */
+        .card-footer {
+            padding: 12px 20px;
+            border-top: 1px solid var(--border-light);
+            display: flex; align-items: center; justify-content: space-between;
+            background: var(--bg);
+        }
+        .entry-strategy {
+            font-family: 'IBM Plex Mono', monospace;
+            font-size: 11px;
+            color: var(--ink-muted);
+        }
+        .allocation-pct {
+            font-family: 'IBM Plex Mono', monospace;
+            font-size: 13px;
+            font-weight: 500;
+            color: var(--gold-dark);
+        }
+
+        /* ── Portfolio Section ────────────────────────── */
+        #portfolio-section { padding: 36px 0 48px; }
+
+        .portfolio-grid {
+            display: grid;
+            grid-template-columns: 1fr 340px;
+            gap: 24px;
+            align-items: start;
+        }
+        @media (max-width: 900px) {
+            .portfolio-grid { grid-template-columns: 1fr; }
+        }
+
+        .portfolio-panel {
+            background: var(--card-bg);
+            border: 1px solid var(--border);
+            border-radius: var(--radius-lg);
+            padding: 28px 28px;
+            box-shadow: var(--shadow-sm);
+        }
+        .portfolio-panel h3 {
+            font-size: 20px;
+            margin-bottom: 20px;
+        }
+
+        /* Calculator input row */
+        .calc-input-row {
+            display: flex; gap: 10px; align-items: center;
+            margin-bottom: 24px;
+        }
+        .currency-select {
+            padding: 10px 12px;
+            border: 1px solid var(--border);
+            border-radius: var(--radius);
+            background: var(--bg);
+            font-family: 'IBM Plex Mono', monospace;
+            font-size: 13px;
+            color: var(--ink);
+            cursor: pointer;
+            outline: none;
+        }
+        .currency-select:focus { border-color: var(--gold); }
+
+        .amount-input {
+            flex: 1;
+            padding: 10px 14px;
+            border: 1px solid var(--border);
+            border-radius: var(--radius);
+            background: var(--bg);
+            font-family: 'IBM Plex Mono', monospace;
+            font-size: 15px;
+            font-weight: 500;
+            color: var(--ink);
+            outline: none;
+            transition: border-color 0.2s;
+        }
+        .amount-input:focus { border-color: var(--gold); }
+
+        /* Breakdown table */
+        .breakdown-table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 13px;
+        }
+        .breakdown-table th {
+            font-family: 'IBM Plex Mono', monospace;
+            font-size: 9px;
+            letter-spacing: 0.15em;
+            text-transform: uppercase;
+            color: var(--ink-faint);
+            text-align: left;
+            padding: 6px 10px;
+            border-bottom: 1px solid var(--border);
+        }
+        .breakdown-table td {
+            padding: 10px 10px;
+            border-bottom: 1px solid var(--border-light);
+            vertical-align: middle;
+        }
+        .breakdown-table tr:last-child td { border-bottom: none; }
+        .breakdown-table .market-name {
+            display: flex; align-items: center; gap: 8px;
+            font-weight: 600;
+        }
+        .breakdown-table .flag-sm { font-size: 16px; }
+        .breakdown-table .amount-cell {
+            font-family: 'IBM Plex Mono', monospace;
+            font-weight: 500;
+            color: var(--gold-dark);
+        }
+        .breakdown-table .pct-cell {
+            font-family: 'IBM Plex Mono', monospace;
+            font-size: 12px;
+            color: var(--ink-faint);
+        }
+        .breakdown-table .strategy-cell {
+            font-size: 11px;
+            color: var(--ink-muted);
+        }
+
+        /* Chart panel */
+        .chart-panel {
+            background: var(--card-bg);
+            border: 1px solid var(--border);
+            border-radius: var(--radius-lg);
+            padding: 24px;
+            box-shadow: var(--shadow-sm);
+            text-align: center;
+        }
+        .chart-panel h4 {
+            font-size: 14px;
+            margin-bottom: 20px;
+            color: var(--ink);
+        }
+        #allocation-chart {
+            display: block;
+            margin: 0 auto;
+        }
+        .chart-legend {
+            margin-top: 18px;
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+            text-align: left;
+        }
+        .legend-item {
+            display: flex; align-items: center; gap: 8px;
+            font-size: 12px;
+            color: var(--ink-muted);
+        }
+        .legend-dot {
+            width: 9px; height: 9px;
+            border-radius: 50%;
+            flex-shrink: 0;
+        }
+        .legend-pct {
+            font-family: 'IBM Plex Mono', monospace;
+            font-size: 11px;
+            color: var(--ink-faint);
+            margin-left: auto;
+        }
+
+        /* ── Loading & Error states ───────────────────── */
+        #loading-state, #error-state {
+            padding: 60px 0;
+            text-align: center;
+        }
+        #loading-state.hidden, #error-state.hidden { display: none; }
+
+        .spinner {
+            width: 36px; height: 36px;
+            border: 2px solid var(--border);
+            border-top-color: var(--gold);
+            border-radius: 50%;
+            animation: spin 0.8s linear infinite;
+            margin: 0 auto 20px;
+        }
+        @keyframes spin { to { transform: rotate(360deg); } }
+
+        .loading-label {
+            font-family: 'IBM Plex Mono', monospace;
+            font-size: 12px;
+            letter-spacing: 0.12em;
+            color: var(--ink-faint);
+            animation: pulse 2s ease-in-out infinite;
+        }
+        @keyframes pulse { 0%,100% { opacity:0.5; } 50% { opacity:1; } }
+
+        .error-box {
+            display: inline-block;
+            background: var(--cautious-bg);
+            border: 1px solid #f0c5c5;
+            border-radius: var(--radius-lg);
+            padding: 28px 36px;
+            max-width: 480px;
+        }
+        .error-box h3 {
+            color: var(--cautious);
+            font-size: 18px;
+            margin-bottom: 10px;
+        }
+        .error-box p {
+            font-size: 13px;
+            color: var(--ink-muted);
+            margin-bottom: 18px;
+        }
+
+        /* Skeleton shimmer */
+        @keyframes shimmer {
+            0%   { background-position: -600px 0; }
+            100% { background-position:  600px 0; }
+        }
+        .skeleton {
+            background: linear-gradient(90deg, var(--border-light) 25%, var(--bg-light) 50%, var(--border-light) 75%);
+            background-size: 600px 100%;
+            animation: shimmer 1.6s infinite;
+            border-radius: 4px;
+        }
+        .skeleton-card {
+            height: 420px;
+            border-radius: var(--radius-lg);
+        }
+
+        /* ── Toast notification ───────────────────────── */
+        #toast {
+            position: fixed;
+            bottom: 28px; right: 28px;
+            background: var(--ink);
+            color: #fff;
+            font-family: 'IBM Plex Mono', monospace;
+            font-size: 12px;
+            padding: 12px 18px;
+            border-radius: var(--radius);
+            opacity: 0;
+            transform: translateY(10px);
+            transition: all 0.25s;
+            z-index: 500;
+            pointer-events: none;
+        }
+        #toast.show { opacity: 1; transform: translateY(0); }
+
+        /* ── Footer ───────────────────────────────────── */
+        footer {
+            border-top: 1px solid var(--border);
+            padding: 28px 0;
+            background: var(--bg-light);
+        }
+        .footer-inner {
+            max-width: 1360px;
+            margin: 0 auto;
+            padding: 0 24px;
+            display: flex;
+            align-items: flex-start;
+            gap: 32px;
+            justify-content: space-between;
+            flex-wrap: wrap;
+        }
+        .footer-disclaimer {
+            font-size: 12px;
+            color: var(--ink-faint);
+            max-width: 560px;
+            line-height: 1.6;
+        }
+        .footer-disclaimer strong { color: var(--ink-muted); }
+        .footer-cadence {
+            font-family: 'IBM Plex Mono', monospace;
+            font-size: 11px;
+            color: var(--ink-faint);
+            text-align: right;
+            line-height: 1.7;
+        }
+
+        /* ── Responsive ───────────────────────────────── */
+        @media (max-width: 768px) {
+            .header-inner { gap: 12px; padding: 0 16px; }
+            .logo-wordmark { font-size: 18px; }
+            .header-meta { display: none; }
+            .container { padding: 0 16px; }
+            .market-grid { grid-template-columns: 1fr; }
+            .modal-box { padding: 28px 24px; margin: 16px; }
+            .macro-summary-text { font-size: 15px; }
+            .portfolio-grid { grid-template-columns: 1fr; }
+        }
+
+        /* ── Utility ──────────────────────────────────── */
+        .hidden { display: none !important; }
+        .text-gold { color: var(--gold); }
+        .text-muted { color: var(--ink-muted); }
+        .mt-8 { margin-top: 8px; }
+        .mt-12 { margin-top: 12px; }
+        .fw-600 { font-weight: 600; }
+    </style>
+</head>
+<body>
+
+    <!-- ── API Key Modal ──────────────────────────────── -->
+    <div id="api-modal">
+        <div class="modal-box">
+            <div class="modal-eyebrow">Access Required</div>
+            <h2>Enter your Anthropic API Key</h2>
+            <p>MERIDIAN uses the Anthropic API with web search to fetch live global intelligence. Your key is stored in memory only and never sent anywhere except Anthropic's servers.</p>
+            <input type="password" id="api-key-input" placeholder="sk-ant-api03-..." autocomplete="off" spellcheck="false">
+            <div class="modal-hint">Get your key at console.anthropic.com &rsaquo;</div>
+            <div style="display:flex; gap:10px;">
+                <button class="btn btn-gold" id="api-key-submit" style="flex:1;">
+                    Unlock MERIDIAN
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- ── Header ─────────────────────────────────────── -->
+    <header>
+        <div class="header-inner">
+            <div class="logo-block">
+                <div class="logo-wordmark">MERIDIAN</div>
+                <div class="logo-sub">Global Investment Intelligence</div>
+            </div>
+            <div class="header-divider"></div>
+            <div class="risk-toggle" id="risk-toggle">
+                <button class="risk-btn" data-profile="conservative">Conservative</button>
+                <button class="risk-btn active" data-profile="balanced">Balanced</button>
+                <button class="risk-btn" data-profile="aggressive">Aggressive</button>
+            </div>
+            <div class="header-spacer"></div>
+            <div class="header-meta">
+                <span id="last-updated">Not yet analysed</span>
+                <button class="btn btn-gold btn-sm" id="refresh-btn">
+                    ↻ Refresh Analysis
+                </button>
+            </div>
+        </div>
+    </header>
+    <div class="gold-rule"></div>
+
+    <!-- ── Toast ──────────────────────────────────────── -->
+    <div id="toast"></div>
+
+    <!-- ── Main ───────────────────────────────────────── -->
+    <main>
+
+        <!-- Macro Summary -->
+        <div id="macro-section" class="section">
+            <div class="container">
+                <div class="section-label">Global Intelligence Feed</div>
+                <div class="macro-card" id="macro-card">
+                    <h2>Macro Overview</h2>
+                    <div class="macro-summary-text" id="macro-text">
+                        Awaiting live analysis — enter your API key and click Refresh Analysis to begin.
+                    </div>
+                    <div class="macro-themes" id="macro-themes"></div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Loading -->
+        <div id="loading-state" class="hidden">
+            <div class="spinner"></div>
+            <div class="loading-label" id="loading-label">Searching global markets…</div>
+        </div>
+
+        <!-- Error -->
+        <div id="error-state" class="hidden">
+            <div class="error-box">
+                <h3>Analysis Failed</h3>
+                <p id="error-msg">An unexpected error occurred.</p>
+                <button class="btn btn-outline" id="retry-btn">Retry</button>
+            </div>
+        </div>
+
+        <!-- Market Cards -->
+        <div id="markets-section" class="section hidden">
+            <div class="container">
+                <div class="section-label">Market Analysis — <span id="markets-date"></span></div>
+                <div class="market-grid" id="market-grid"></div>
+            </div>
+        </div>
+
+        <!-- Portfolio Calculator -->
+        <div id="portfolio-section" class="section hidden">
+            <div class="container">
+                <div class="section-label">Portfolio Calculator</div>
+                <div class="portfolio-grid">
+                    <!-- Breakdown -->
+                    <div class="portfolio-panel">
+                        <h3>Allocation Breakdown</h3>
+                        <div class="calc-input-row">
+                            <select class="currency-select" id="currency-select">
+                                <option value="GBP">£ GBP</option>
+                                <option value="USD">$ USD</option>
+                                <option value="EUR">€ EUR</option>
+                                <option value="INR">₹ INR</option>
+                                <option value="JPY">¥ JPY</option>
+                            </select>
+                            <input type="number" class="amount-input" id="amount-input"
+                                   placeholder="50000" min="100" value="50000">
+                        </div>
+                        <div id="breakdown-table-wrapper">
+                            <table class="breakdown-table" id="breakdown-table">
+                                <thead>
+                                    <tr>
+                                        <th>Market</th>
+                                        <th>Allocation</th>
+                                        <th>Amount</th>
+                                        <th>Entry Strategy</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="breakdown-tbody"></tbody>
+                            </table>
+                        </div>
+                    </div>
+                    <!-- Chart -->
+                    <div class="chart-panel">
+                        <h4 style="font-family:'Playfair Display',serif;">Portfolio Allocation</h4>
+                        <svg id="allocation-chart" width="220" height="220" viewBox="0 0 220 220"></svg>
+                        <div class="chart-legend" id="chart-legend"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+    </main>
+
+    <!-- ── Footer ─────────────────────────────────────── -->
+    <footer>
+        <div class="footer-inner">
+            <p class="footer-disclaimer">
+                <strong>Disclaimer:</strong> MERIDIAN is for informational purposes only and does not constitute financial advice.
+                All analysis is AI-generated based on publicly available information and should not be relied upon as the sole
+                basis for any investment decision. Past performance is not indicative of future results.
+                Always consult a qualified financial advisor before investing.
+            </p>
+            <div class="footer-cadence">
+                <div>Analysis is best refreshed <strong>weekly</strong>, not daily.</div>
+                <div class="mt-8">Built for 1–10 year investment horizons.</div>
+                <div class="mt-8 text-gold" style="font-size:10px;">MERIDIAN &copy; 2026</div>
+            </div>
+        </div>
+    </footer>
+
+    <script>
+        // ── JavaScript will be added in Step 3 ──
+    </script>
+</body>
+</html>
