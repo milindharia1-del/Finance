@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Meridian Login</title>
+    <script>
+        // Function to handle country selection and password login
+        function handleLogin() {
+            const country = document.getElementById('country').value;
+            const password = document.getElementById('password').value;
+            // Implement login logic here
+            alert(`Logging in from ${country}...`);
+        }
+
+        // Caching logic for 7 days
+        const cacheDuration = 7 * 24 * 60 * 60 * 1000; // 7 days in milliseconds
+        window.onload = function () {
+            if (!localStorage.getItem('token')) {
+                // Simulated token generation
+                localStorage.setItem('token', 'sample_token_123');
+                localStorage.setItem('tokenExpiry', Date.now() + cacheDuration);
+            } else if (Date.now() > localStorage.getItem('tokenExpiry')) {
+                // Token expired, clear it
+                localStorage.removeItem('token');
+                localStorage.removeItem('tokenExpiry');
+            }
+        };
+    </script>
+</head>
+<body>
+    <h1>Meridian Login</h1>
+    <form onsubmit="event.preventDefault(); handleLogin();">
+        <label for="country">Select Country:</label>
+        <select id="country">
+            <option value="USA">USA</option>
+            <option value="Canada">Canada</option>
+            <option value="UK">UK</option>
+            <!-- Add more countries as needed -->
+        </select>
+        <br>
+        <label for="password">Password:</label>
+        <input type="password" id="password" required>
+        <br>
+        <button type="submit">Login</button>
+    </form>
+</body>
+</html>
