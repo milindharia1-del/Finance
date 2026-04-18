@@ -92,8 +92,8 @@ function writeCache(country, riskProfile, data) {
     catch (e) { console.error('Cache write error:', e.message); }
 }
 
-// ── Claude API call ───────────────────────────────────────
-async function callClaude(country, riskProfile) {
+// ── Claude API call (with retry) ──────────────────────────
+async function callClaude(country, riskProfile, attempt = 1) {
     const today = new Date().toISOString().split('T')[0];
 
     const system = `You are a senior global macro investment analyst with 25+ years of experience. \
@@ -126,27 +126,39 @@ Return ONLY this JSON (no other text):
   "entryStrategy": "Phased over 6 months"
 }
 
-Include 3-4 sectors and 4-5 companies. Tailor for a ${riskProfile} risk profile investor.`;
+Include 3-4 sectors and 3-4 companies. Tailor for a ${riskProfile} risk profile investor.`;
 
-    const resp = await axios.post(
-        'https://api.anthropic.com/v1/messages',
-        {
-            model: 'claude-sonnet-4-20250514',
-            max_tokens: 2000,
-            system,
-            tools: [{ type: 'web_search_20250305', name: 'web_search', max_uses: 3 }],
-            messages: [{ role: 'user', content: user }],
-        },
-        {
-            headers: {
-                'x-api-key': process.env.ANTHROPIC_API_KEY,
-                'anthropic-version': '2023-06-01',
-                'anthropic-beta': 'web-search-2025-03-05',
-                'content-type': 'application/json',
+    let resp;
+    try {
+        resp = await axios.post(
+            'https://api.anthropic.com/v1/messages',
+            {
+                model: 'claude-sonnet-4-20250514',
+                max_tokens: 1500,
+                system,
+                tools: [{ type: 'web_search_20250305', name: 'web_search', max_uses: 2 }],
+                messages: [{ role: 'user', content: user }],
             },
-            timeout: 90000,
+            {
+                headers: {
+                    'x-api-key': process.env.ANTHROPIC_API_KEY,
+                    'anthropic-version': '2023-06-01',
+                    'anthropic-beta': 'web-search-2025-03-05',
+                    'content-type': 'application/json',
+                },
+                timeout: 180000, // 3 minutes
+            }
+        );
+    } catch (err) {
+        // Retry on timeout (up to 2 attempts)
+        const isTimeout = err.code === 'ECONNABORTED' || err.message?.includes('timeout') || err.message?.includes('idle');
+        if (isTimeout && attempt < 3) {
+            console.log(`[callClaude] Timeout on attempt ${attempt}, retrying in 3s…`);
+            await new Promise(r => setTimeout(r, 3000));
+            return callClaude(country, riskProfile, attempt + 1);
         }
-    );
+        throw err;
+    }
 
     const texts = (resp.data.content || [])
         .filter(b => b.type === 'text')
@@ -218,7 +230,7 @@ app.get('/api/cache-status', requireAuth, (req, res) => {
 app.get('/health', (_req, res) => res.json({ status: 'ok', timestamp: Date.now(), version: '2.0.0' }));
 
 // ── Start ─────────────────────────────────────────────────
-app.listen(PORT, '0.0.0.0', () => {
+const server = app.listen(PORT, '0.0.0.0', () => {
     console.log(`\n  ╔══════════════════════════════════╗`);
     console.log(`  ║  MERIDIAN Server v2.0            ║`);
     console.log(`  ║  http://0.0.0.0:${PORT}             ║`);
@@ -227,3 +239,4 @@ app.listen(PORT, '0.0.0.0', () => {
     console.log(`  Password : ${process.env.PASSWORD         ? '✓ set'    : '✗ MISSING — set PASSWORD in .env'}`);
     console.log(`  JWT      : ${process.env.JWT_SECRET       ? '✓ set'    : '⚠ using fallback (set JWT_SECRET in .env)'}\n`);
 });
+server.timeout = 200000; // 200s — longer than axios timeout so Node never cuts first
