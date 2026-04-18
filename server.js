@@ -14,7 +14,7 @@ const CACHE_TTL  = 7 * 24 * 60 * 60 * 1000;   // 7 days
 const STALE_TTL  = 3 * 24 * 60 * 60 * 1000;   // 3 days → serve + refresh bg
 const JWT_SECRET = process.env.JWT_SECRET || 'meridian_fallback_change_me';
 const MAX_DAILY  = 10;
-const MODEL      = 'claude-sonnet-4-20250514';
+const MODEL      = 'claude-sonnet-4-5-20250514'; // verified model ID
 
 const rateLimits     = {};
 const bgRefreshQueue = new Set(); // track in-progress background refreshes
@@ -152,25 +152,43 @@ Return ONLY this JSON:
 
 Include 3 sectors and 3-5 companies suited to a ${horizon} horizon and ${riskProfile} risk profile.`;
 
-    const resp = await axios.post(
-        'https://api.anthropic.com/v1/messages',
-        {
-            model:      MODEL,
-            max_tokens: 1200,
-            system,
-            messages:   [{ role: 'user', content: user }],
-        },
-        {
-            headers: {
-                'x-api-key':         process.env.ANTHROPIC_API_KEY,
-                'anthropic-version': '2023-06-01',
-                'content-type':      'application/json',
-            },
-            timeout: 45000,
+    const MAX_RETRIES = 2;
+    let lastErr;
+    for (let attempt = 1; attempt <= MAX_RETRIES; attempt++) {
+        try {
+            const resp = await axios.post(
+                'https://api.anthropic.com/v1/messages',
+                {
+                    model:      MODEL,
+                    max_tokens: 1200,
+                    system,
+                    messages:   [{ role: 'user', content: user }],
+                },
+                {
+                    headers: {
+                        'x-api-key':         process.env.ANTHROPIC_API_KEY,
+                        'anthropic-version': '2023-06-01',
+                        'content-type':      'application/json',
+                    },
+                    timeout: 60000, // 60s per attempt
+                }
+            );
+            return extractJSON(resp.data.content);
+        } catch (err) {
+            lastErr = err;
+            const isRetryable = err.code === 'ECONNABORTED'
+                || err.message?.includes('timeout')
+                || err.message?.includes('idle')
+                || err.response?.status >= 500;
+            if (isRetryable && attempt < MAX_RETRIES) {
+                console.log(`[analyzeMarket] Attempt ${attempt} failed (${err.message}), retrying in 3s…`);
+                await new Promise(r => setTimeout(r, 3000));
+            } else {
+                throw err;
+            }
         }
-    );
-
-    return extractJSON(resp.data.content);
+    }
+    throw lastErr;
 }
 
 // ── JSON extractor ────────────────────────────────────────
