@@ -56,19 +56,14 @@ const HORIZON_GUIDANCE = {
     '10y': 'Generational thesis: AI/automation, energy transition, demographics.',
 };
 
-// ── Claude call (no web search, zero timeout risk) ────────
+// ── Claude call ───────────────────────────────────────────
 async function callClaude(country, horizon, riskProfile) {
     const today = new Date().toISOString().split('T')[0];
     const guide = HORIZON_GUIDANCE[horizon] || HORIZON_GUIDANCE['1y'];
 
-    // System prompt as array enables Anthropic prompt caching (saves ~20-30% input cost)
-    const system = [{
-        type: 'text',
-        text: `You are a senior global macro investment analyst with 25+ years of experience. \
+    const system = `You are a senior global macro investment analyst with 25+ years of experience. \
 Respond ONLY with valid raw JSON — no markdown, no code fences, no explanation. \
-Start with { and end with }.`,
-        cache_control: { type: 'ephemeral' },
-    }];
+Start with { and end with }.`;
 
     const user = `Today is ${today}. Analyse the ${country} stock market for a ${riskProfile} investor \
 with a ${horizon} investment horizon.
@@ -125,33 +120,26 @@ Rules:
 - catalysts: exactly 2 near-term events with approximate dates
 - conviction: "High", "Medium", or "Low" only`;
 
-    // AbortController gives a hard deadline — axios timeout alone doesn't reliably
-    // cancel a hanging response body in Node.js (only detects socket inactivity).
-    const controller = new AbortController();
-    const hardTimer  = setTimeout(() => controller.abort(), 40000);
-    try {
-        const resp = await axios.post(
-            'https://api.anthropic.com/v1/messages',
-            { model: MODEL, max_tokens: 3200, system, messages: [{ role: 'user', content: user }] },
-            {
-                headers: {
-                    'x-api-key':         process.env.ANTHROPIC_API_KEY,
-                    'anthropic-version': '2023-06-01',
-                    'anthropic-beta':    'prompt-caching-2024-07-31',
-                    'content-type':      'application/json',
-                },
-                timeout: 40000,
-                signal:  controller.signal,
-            }
-        );
-        clearTimeout(hardTimer);
-        if (resp.data.stop_reason === 'max_tokens')
-            console.warn('[claude] response truncated — increase max_tokens');
-        return extractJSON(resp.data.content);
-    } catch (err) {
-        clearTimeout(hardTimer);
-        throw err;
-    }
+    // Promise.race gives a guaranteed hard deadline on any Node.js version
+    const deadline = new Promise((_, reject) =>
+        setTimeout(() => reject(new Error('Claude API timed out after 40s')), 40000));
+
+    const apiCall = axios.post(
+        'https://api.anthropic.com/v1/messages',
+        { model: MODEL, max_tokens: 3200, system, messages: [{ role: 'user', content: user }] },
+        {
+            headers: {
+                'x-api-key':         process.env.ANTHROPIC_API_KEY,
+                'anthropic-version': '2023-06-01',
+                'content-type':      'application/json',
+            },
+        }
+    );
+
+    const resp = await Promise.race([apiCall, deadline]);
+    if (resp.data.stop_reason === 'max_tokens')
+        console.warn('[claude] response truncated — increase max_tokens');
+    return extractJSON(resp.data.content);
 }
 
 function extractJSON(content = []) {
@@ -233,11 +221,7 @@ app.post('/api/analyze', requireAuth, rateLimit, async (req, res) => {
 
 // ── POST /api/optimize ───────────────────────────────────
 async function callClaudeOptimize(markets, horizon, riskProfile) {
-    const system = [{
-        type: 'text',
-        text: `You are a portfolio optimization expert. Respond ONLY with valid raw JSON — no markdown, no explanation.`,
-        cache_control: { type: 'ephemeral' },
-    }];
+    const system = `You are a portfolio optimization expert. Respond ONLY with valid raw JSON — no markdown, no explanation.`;
 
     const marketLines = markets.map(m =>
         `- code:"${m.code}" | ${m.outlook || 'Neutral'} outlook | ${m.confidence || 70}% confidence | ${m.expectedAnnualReturnPct || 10}% est. annual return`
@@ -270,29 +254,22 @@ Rules:
 - Do NOT default to equal splits — differentiate based on fundamentals
 - Higher confidence + higher return = higher weight for aggressive; more even for conservative`;
 
-    const controller = new AbortController();
-    const hardTimer  = setTimeout(() => controller.abort(), 25000);
-    try {
-        const resp = await axios.post(
-            'https://api.anthropic.com/v1/messages',
-            { model: MODEL, max_tokens: 600, system, messages: [{ role: 'user', content: user }] },
-            {
-                headers: {
-                    'x-api-key':         process.env.ANTHROPIC_API_KEY,
-                    'anthropic-version': '2023-06-01',
-                    'anthropic-beta':    'prompt-caching-2024-07-31',
-                    'content-type':      'application/json',
-                },
-                timeout: 25000,
-                signal:  controller.signal,
-            }
-        );
-        clearTimeout(hardTimer);
-        return extractJSON(resp.data.content);
-    } catch (err) {
-        clearTimeout(hardTimer);
-        throw err;
-    }
+    const deadline = new Promise((_, reject) =>
+        setTimeout(() => reject(new Error('Optimize timed out after 25s')), 25000));
+
+    const apiCall = axios.post(
+        'https://api.anthropic.com/v1/messages',
+        { model: MODEL, max_tokens: 600, system, messages: [{ role: 'user', content: user }] },
+        {
+            headers: {
+                'x-api-key':         process.env.ANTHROPIC_API_KEY,
+                'anthropic-version': '2023-06-01',
+                'content-type':      'application/json',
+            },
+        }
+    );
+
+    return extractJSON((await Promise.race([apiCall, deadline])).data.content);
 }
 
 app.post('/api/optimize', requireAuth, async (req, res) => {
