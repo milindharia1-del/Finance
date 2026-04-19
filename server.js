@@ -214,17 +214,20 @@ app.post('/api/analyze', requireAuth, rateLimit, async (req, res) => {
     if (!country) return res.status(400).json({ success: false, error: 'country is required' });
 
     const cached = readCache(country, horizon, riskProfile);
-    if (cached) return res.json({ success: true, ...cached, fromCache: true });
+    if (cached) { console.log(`[analyze] ${country} — cache hit`); return res.json({ success: true, ...cached, fromCache: true }); }
 
+    const t0 = Date.now();
+    console.log(`[analyze] ${country} — calling Claude…`);
     try {
         const data   = await callClaude(country, horizon, riskProfile);
+        console.log(`[analyze] ${country} — done in ${((Date.now()-t0)/1000).toFixed(1)}s`);
         const result = { ...data, timestamp: Date.now(), fromCache: false };
         writeCache(country, horizon, riskProfile, result);
         rateLimits[req.user.user].count++;
         res.json({ success: true, ...result });
     } catch (err) {
         const apiErr = err.response?.data?.error?.message || err.response?.data?.message;
-        console.error('[/api/analyze]', apiErr || err.message, err.response?.data || '');
+        console.error(`[analyze] ${country} — FAILED after ${((Date.now()-t0)/1000).toFixed(1)}s:`, apiErr || err.message, err.response?.data || '');
         res.status(err.response?.status || 500).json({ success: false, error: apiErr || err.message });
     }
 });
