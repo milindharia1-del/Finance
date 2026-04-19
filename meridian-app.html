@@ -618,6 +618,8 @@
   }
 
   .companies-table tr:last-child td { border-bottom: none; }
+  .dca-table td:first-child { color: var(--ink3); font-size: .78rem; }
+  .dca-note { font-size: .73rem; color: var(--ink3); margin: .3rem 0 0; font-style: italic; }
 
   .ticker-badge {
     font-family: 'IBM Plex Mono', monospace;
@@ -1560,6 +1562,34 @@ function buildInvestSection(code, d, countryAmt) {
     </div>`;
   }
 
+  // DCA schedule — only when entryStrategy is Phased
+  const horizonMonths = { '6m':6, '1y':12, '2y':24, '3y':36, '4y':48, '5y':60, '10y':120 };
+  const totalMonths   = horizonMonths[state.horizon] || 12;
+  const dcaHTML = (d.entryStrategy || '').toLowerCase().includes('phased') && countryAmt > 0
+    ? (() => {
+        const monthly = countryAmt / totalMonths;
+        const rows = Array.from({ length: Math.min(totalMonths, 12) }, (_, i) => {
+          const cumulative = monthly * (i + 1);
+          return `<tr>
+            <td>Month ${i + 1}</td>
+            <td>${formatAmount(Math.round(monthly), state.currency)}</td>
+            <td>${formatAmount(Math.round(cumulative), state.currency)}</td>
+          </tr>`;
+        }).join('');
+        const note = totalMonths > 12
+          ? `<p class="dca-note">Showing first 12 of ${totalMonths} monthly payments</p>` : '';
+        return `
+          <div class="card-section-title">DCA Schedule — ${formatAmount(Math.round(monthly), state.currency)}/month over ${totalMonths} months</div>
+          <div style="overflow-x:auto">
+            <table class="companies-table dca-table">
+              <thead><tr><th>Period</th><th>Monthly Buy</th><th>Cumulative</th></tr></thead>
+              <tbody>${rows}</tbody>
+            </table>
+          </div>
+          ${note}`;
+      })()
+    : '';
+
   return `
     <div class="card-section-title">Where to Invest — ${amtLabel} breakdown</div>
     <div style="overflow-x:auto">
@@ -1568,6 +1598,7 @@ function buildInvestSection(code, d, countryAmt) {
         <tbody>${companiesHTML}</tbody>
       </table>
     </div>
+    ${dcaHTML}
     <div class="card-section-title">Projected Growth — ${state.horizon} horizon (Bear / Base / Bull)</div>
     ${scenarioRow('Bear', 'bear', bearPct)}
     ${scenarioRow('Base', 'base', basePct)}
