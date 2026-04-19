@@ -1461,21 +1461,18 @@ async function startAnalysis() {
     `);
   });
 
-  // Fetch sequentially
+  // Fetch all markets in parallel — each card renders as soon as its own fetch resolves
   let done = 0;
-  for (const code of countries) {
-    const c = COUNTRIES.find(x => x.code === code);
-    updateProgress(done, countries.length, c?.name || code);
-    try {
-      const data = await analyseCountry(code);
-      state.results[code] = data;
-      renderCountryCard(code, data);
-    } catch (err) {
-      renderErrorCard(code, err.message);
-    }
-    done++;
-    updateProgress(done, countries.length, null);
-  }
+  const label = countries.length === 1
+    ? `${COUNTRIES.find(x => x.code === countries[0])?.name || countries[0]}…`
+    : `${countries.length} markets simultaneously…`;
+  updateProgress(0, countries.length, label);
+  await Promise.allSettled(countries.map(code =>
+    analyseCountry(code)
+      .then(data => { state.results[code] = data; renderCountryCard(code, data); })
+      .catch(err  => { renderErrorCard(code, err.message); })
+      .finally(()  => { done++; updateProgress(done, countries.length, null); })
+  ));
 
   // Show optimising spinner while we make the optimization call
   if (state.selectedCountries.length > 1) {
@@ -1766,12 +1763,15 @@ function updateProgress(done, total, fetchingName) {
 
   const titleEl = document.getElementById('progress-title');
   if (fetchingName) {
-    titleEl.textContent = `Fetching ${fetchingName} · ${done + 1} of ${total}`;
-    document.title = `⏳ ${done + 1}/${total} — MERIDIAN`;
-  } else if (done >= total && total > 0) {
-    titleEl.textContent = 'Analysing Markets';
-    document.title = 'MERIDIAN — Investment Intelligence';
-    setTimeout(() => { document.getElementById('progress-wrap').style.display = 'none'; }, 800);
+    titleEl.textContent = `Analysing ${fetchingName}`;
+    document.title = `⏳ ${total > 1 ? `0/${total}` : '…'} — MERIDIAN`;
+  } else {
+    document.title = `⏳ ${done}/${total} — MERIDIAN`;
+    if (done >= total && total > 0) {
+      titleEl.textContent = 'Analysing Markets';
+      document.title = 'MERIDIAN — Investment Intelligence';
+      setTimeout(() => { document.getElementById('progress-wrap').style.display = 'none'; }, 800);
+    }
   }
 }
 
