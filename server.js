@@ -125,33 +125,32 @@ Rules:
 - catalysts: exactly 2 near-term events with approximate dates
 - conviction: "High", "Medium", or "Low" only`;
 
-    // Retry up to 2 times
-    for (let attempt = 1; attempt <= 2; attempt++) {
-        try {
-            const resp = await axios.post(
-                'https://api.anthropic.com/v1/messages',
-                { model: MODEL, max_tokens: 3200, system, messages: [{ role: 'user', content: user }] },
-                {
-                    headers: {
-                        'x-api-key':         process.env.ANTHROPIC_API_KEY,
-                        'anthropic-version': '2023-06-01',
-                        'anthropic-beta':    'prompt-caching-2024-07-31',
-                        'content-type':      'application/json',
-                    },
-                    timeout: 45000,
-                }
-            );
-            if (resp.data.stop_reason === 'max_tokens')
-                console.warn('[claude] response truncated — increase max_tokens');
-            return extractJSON(resp.data.content);
-        } catch (err) {
-            // Only retry on server-side errors (529 rate-limit, 503), NOT on timeout
-            const retry = err.response?.status === 529 || err.response?.status === 503;
-            if (retry && attempt === 1) {
-                console.log(`[claude] attempt 1 failed (${err.response?.status}), retrying in 3s…`);
-                await new Promise(r => setTimeout(r, 3000));
-            } else throw err;
-        }
+    // AbortController gives a hard deadline — axios timeout alone doesn't reliably
+    // cancel a hanging response body in Node.js (only detects socket inactivity).
+    const controller = new AbortController();
+    const hardTimer  = setTimeout(() => controller.abort(), 40000);
+    try {
+        const resp = await axios.post(
+            'https://api.anthropic.com/v1/messages',
+            { model: MODEL, max_tokens: 3200, system, messages: [{ role: 'user', content: user }] },
+            {
+                headers: {
+                    'x-api-key':         process.env.ANTHROPIC_API_KEY,
+                    'anthropic-version': '2023-06-01',
+                    'anthropic-beta':    'prompt-caching-2024-07-31',
+                    'content-type':      'application/json',
+                },
+                timeout: 40000,
+                signal:  controller.signal,
+            }
+        );
+        clearTimeout(hardTimer);
+        if (resp.data.stop_reason === 'max_tokens')
+            console.warn('[claude] response truncated — increase max_tokens');
+        return extractJSON(resp.data.content);
+    } catch (err) {
+        clearTimeout(hardTimer);
+        throw err;
     }
 }
 
@@ -271,20 +270,29 @@ Rules:
 - Do NOT default to equal splits — differentiate based on fundamentals
 - Higher confidence + higher return = higher weight for aggressive; more even for conservative`;
 
-    const resp = await axios.post(
-        'https://api.anthropic.com/v1/messages',
-        { model: MODEL, max_tokens: 600, system, messages: [{ role: 'user', content: user }] },
-        {
-            headers: {
-                'x-api-key':         process.env.ANTHROPIC_API_KEY,
-                'anthropic-version': '2023-06-01',
-                'anthropic-beta':    'prompt-caching-2024-07-31',
-                'content-type':      'application/json',
-            },
-            timeout: 30000,
-        }
-    );
-    return extractJSON(resp.data.content);
+    const controller = new AbortController();
+    const hardTimer  = setTimeout(() => controller.abort(), 25000);
+    try {
+        const resp = await axios.post(
+            'https://api.anthropic.com/v1/messages',
+            { model: MODEL, max_tokens: 600, system, messages: [{ role: 'user', content: user }] },
+            {
+                headers: {
+                    'x-api-key':         process.env.ANTHROPIC_API_KEY,
+                    'anthropic-version': '2023-06-01',
+                    'anthropic-beta':    'prompt-caching-2024-07-31',
+                    'content-type':      'application/json',
+                },
+                timeout: 25000,
+                signal:  controller.signal,
+            }
+        );
+        clearTimeout(hardTimer);
+        return extractJSON(resp.data.content);
+    } catch (err) {
+        clearTimeout(hardTimer);
+        throw err;
+    }
 }
 
 app.post('/api/optimize', requireAuth, async (req, res) => {
