@@ -58,12 +58,17 @@ const HORIZON_GUIDANCE = {
 
 // ── Claude call (no web search, zero timeout risk) ────────
 async function callClaude(country, horizon, riskProfile) {
-    const today   = new Date().toISOString().split('T')[0];
-    const guide   = HORIZON_GUIDANCE[horizon] || HORIZON_GUIDANCE['1y'];
+    const today = new Date().toISOString().split('T')[0];
+    const guide = HORIZON_GUIDANCE[horizon] || HORIZON_GUIDANCE['1y'];
 
-    const system = `You are a senior global macro investment analyst with 25+ years of experience. \
+    // System prompt as array enables Anthropic prompt caching (saves ~20-30% input cost)
+    const system = [{
+        type: 'text',
+        text: `You are a senior global macro investment analyst with 25+ years of experience. \
 Respond ONLY with valid raw JSON — no markdown, no code fences, no explanation. \
-Start with { and end with }.`;
+Start with { and end with }.`,
+        cache_control: { type: 'ephemeral' },
+    }];
 
     const user = `Today is ${today}. Analyse the ${country} stock market for a ${riskProfile} investor \
 with a ${horizon} investment horizon.
@@ -81,12 +86,27 @@ Return ONLY this JSON (no markdown, no code fences, no extra text):
   "whyNow": "1-2 sentences on the key opportunity for ${horizon} horizon",
   "horizon": "${horizon}",
   "riskProfile": "${riskProfile}",
+  "bearReturnPct": -4,
+  "baseReturnPct": 12,
+  "bullReturnPct": 22,
   "expectedAnnualReturnPct": 12,
+  "currencyRisk": "Low — market trades in USD, no conversion risk",
   "sectors": [
     { "name": "Sector", "reason": "why this sector for ${horizon}" }
   ],
   "companies": [
-    { "ticker": "TICK", "name": "Company", "exchange": "Exchange", "reason": "1-sentence investment thesis", "conviction": "High", "allocationPct": 25, "expectedAnnualReturnPct": 15 }
+    {
+      "ticker": "TICK",
+      "name": "Company",
+      "exchange": "Exchange",
+      "reason": "1-sentence investment thesis",
+      "conviction": "High",
+      "allocationPct": 25,
+      "expectedAnnualReturnPct": 15,
+      "dividendYield": 2.3,
+      "valuationContext": "Trades at 18x forward P/E vs sector 26x — discount",
+      "catalysts": ["Q4 earnings beat expected Mar 2025", "New product launch H1 2025"]
+    }
   ],
   "risks": ["risk 1", "risk 2", "risk 3"],
   "suggestedAllocationPct": 20,
@@ -96,8 +116,13 @@ Return ONLY this JSON (no markdown, no code fences, no extra text):
 Rules:
 - Include exactly 3 sectors
 - Include 4-5 companies; their allocationPct values MUST sum to exactly 100
-- expectedAnnualReturnPct at country level: realistic estimated compound annual return for the full ${horizon} horizon
-- expectedAnnualReturnPct at company level: that specific company's estimated annual return
+- bearReturnPct: realistic downside annual return (can be negative)
+- baseReturnPct: most likely annual return (same as expectedAnnualReturnPct)
+- bullReturnPct: realistic upside annual return — all three must differ
+- currencyRisk: 1 sentence on FX exposure for a ${riskProfile} investor
+- dividendYield: use 0 if no dividend; number only, no % sign
+- valuationContext: 1 short sentence on current valuation vs peers
+- catalysts: exactly 2 near-term events with approximate dates
 - conviction: "High", "Medium", or "Low" only`;
 
     // Retry up to 2 times
@@ -105,11 +130,12 @@ Rules:
         try {
             const resp = await axios.post(
                 'https://api.anthropic.com/v1/messages',
-                { model: MODEL, max_tokens: 2500, system, messages: [{ role: 'user', content: user }] },
+                { model: MODEL, max_tokens: 3200, system, messages: [{ role: 'user', content: user }] },
                 {
                     headers: {
                         'x-api-key':         process.env.ANTHROPIC_API_KEY,
                         'anthropic-version': '2023-06-01',
+                        'anthropic-beta':    'prompt-caching-2024-07-31',
                         'content-type':      'application/json',
                     },
                     timeout: 45000,
@@ -204,7 +230,11 @@ app.post('/api/analyze', requireAuth, rateLimit, async (req, res) => {
 
 // ── POST /api/optimize ───────────────────────────────────
 async function callClaudeOptimize(markets, horizon, riskProfile) {
-    const system = `You are a portfolio optimization expert. Respond ONLY with valid raw JSON — no markdown, no explanation.`;
+    const system = [{
+        type: 'text',
+        text: `You are a portfolio optimization expert. Respond ONLY with valid raw JSON — no markdown, no explanation.`,
+        cache_control: { type: 'ephemeral' },
+    }];
 
     const marketLines = markets.map(m =>
         `- code:"${m.code}" | ${m.outlook || 'Neutral'} outlook | ${m.confidence || 70}% confidence | ${m.expectedAnnualReturnPct || 10}% est. annual return`
@@ -244,6 +274,7 @@ Rules:
             headers: {
                 'x-api-key':         process.env.ANTHROPIC_API_KEY,
                 'anthropic-version': '2023-06-01',
+                'anthropic-beta':    'prompt-caching-2024-07-31',
                 'content-type':      'application/json',
             },
             timeout: 30000,

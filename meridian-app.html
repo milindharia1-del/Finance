@@ -649,6 +649,101 @@
     white-space: nowrap;
   }
 
+  .valuation-ctx {
+    font-size: .7rem;
+    color: var(--ink3);
+    margin-top: .15rem;
+    line-height: 1.4;
+  }
+
+  .catalyst-list {
+    list-style: none;
+    margin-top: .25rem;
+  }
+
+  .catalyst-list li {
+    font-size: .68rem;
+    color: var(--blue);
+    padding: .1rem 0;
+    display: flex;
+    gap: .3rem;
+  }
+
+  .catalyst-list li::before { content: '▸'; opacity: .6; flex-shrink: 0; }
+
+  .dividend-badge {
+    display: inline-block;
+    font-size: .65rem;
+    font-weight: 600;
+    padding: .1rem .35rem;
+    border-radius: 2px;
+    background: rgba(201,168,76,.15);
+    color: var(--gold-dark);
+    white-space: nowrap;
+    vertical-align: middle;
+    margin-left: .3rem;
+  }
+
+  /* ── Bear / Base / Bull scenarios ── */
+  .scenario-row {
+    display: flex;
+    align-items: flex-end;
+    gap: .5rem;
+    margin-bottom: .5rem;
+  }
+
+  .scenario-label {
+    font-size: .68rem;
+    font-weight: 600;
+    letter-spacing: .06em;
+    width: 44px;
+    flex-shrink: 0;
+    padding-bottom: .25rem;
+  }
+
+  .scenario-label.bear { color: var(--red); }
+  .scenario-label.base { color: var(--gold-dark); }
+  .scenario-label.bull { color: var(--green); }
+
+  .scenario-result {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: .7rem;
+    color: var(--ink3);
+    white-space: nowrap;
+    padding-bottom: .25rem;
+    flex-shrink: 0;
+  }
+
+  .scenario-bars-wrap { flex: 1; }
+
+  .scenario-bars-wrap .forecast-bar { opacity: .85; }
+  .scenario-bars-wrap.bear .forecast-bar { background: linear-gradient(to top, #8b1a1a, #c0392b); }
+  .scenario-bars-wrap.base .forecast-bar { background: linear-gradient(to top, var(--gold-dark), var(--gold-light)); }
+  .scenario-bars-wrap.bull .forecast-bar { background: linear-gradient(to top, #1a5c38, #2e7d52); }
+
+  /* ── Currency risk ── */
+  .currency-risk-badge {
+    font-size: .65rem;
+    font-weight: 600;
+    padding: .2rem .5rem;
+    border-radius: 2px;
+    background: rgba(255,200,0,.15);
+    color: #8a6800;
+    border: 1px solid rgba(255,200,0,.3);
+    white-space: nowrap;
+  }
+
+  .currency-risk-note {
+    font-size: .78rem;
+    color: #7a6000;
+    background: rgba(255,200,0,.08);
+    border-left: 3px solid rgba(255,200,0,.5);
+    padding: .5rem .8rem;
+    border-radius: 0 2px 2px 0;
+    margin-bottom: .9rem;
+    line-height: 1.5;
+  }
+
   /* ── Forecast bar chart ── */
   .forecast-meta {
     font-size: .82rem;
@@ -1131,6 +1226,8 @@ const RISK_PROFILES = ['Conservative', 'Balanced', 'Aggressive'];
 
 const CHART_COLORS = ['#c9a84c','#e8c96e','#a07828','#f0d8a0','#7a5c1c','#d4b060','#eed090'];
 
+const LOCAL_CURRENCY = { US:'USD', UK:'GBP', India:'INR', Germany:'EUR', France:'EUR', Japan:'JPY', China:'CNY' };
+
 // ── State ───────────────────────────────────────────────
 const state = {
   token:            null,
@@ -1392,18 +1489,21 @@ function buildInvestSection(code, d, countryAmt) {
   const coList     = d.companies || [];
   const coAllocSum = coList.reduce((s, co) => s + (co.allocationPct || 0), 0);
   const normFactor = coAllocSum > 0 ? 100 / coAllocSum : 1;
-  const annualReturn = d.expectedAnnualReturnPct || 10;
   const amtLabel   = formatAmount(Math.round(countryAmt), state.currency);
 
   const companiesHTML = coList.map(co => {
-    const cv    = (co.conviction || '').toLowerCase();
-    const cvCls = cv === 'high' ? 'conviction-high' : cv === 'medium' ? 'conviction-medium' : 'conviction-low';
-    const coPct = (co.allocationPct || 0) * normFactor;
-    const coAmt = formatAmount(Math.round((coPct / 100) * countryAmt), state.currency);
-    const coRet = co.expectedAnnualReturnPct ? `+${co.expectedAnnualReturnPct}%` : '–';
+    const cv       = (co.conviction || '').toLowerCase();
+    const cvCls    = cv === 'high' ? 'conviction-high' : cv === 'medium' ? 'conviction-medium' : 'conviction-low';
+    const coPct    = (co.allocationPct || 0) * normFactor;
+    const coAmt    = formatAmount(Math.round((coPct / 100) * countryAmt), state.currency);
+    const coRet    = co.expectedAnnualReturnPct ? `+${co.expectedAnnualReturnPct}%` : '–';
+    const divBadge = co.dividendYield > 0 ? `<span class="dividend-badge">${co.dividendYield}% div</span>` : '';
+    const valCtx   = co.valuationContext ? `<div class="valuation-ctx">${co.valuationContext}</div>` : '';
+    const cats     = (co.catalysts || []).length
+      ? `<ul class="catalyst-list">${co.catalysts.map(c => `<li>${c}</li>`).join('')}</ul>` : '';
     return `<tr>
-      <td><span class="ticker-badge">${co.ticker || '–'}</span><br><span style="font-size:.65rem;color:var(--ink3)">${co.exchange || ''}</span></td>
-      <td>${co.name || '–'}</td>
+      <td><span class="ticker-badge">${co.ticker || '–'}</span> ${divBadge}<br><span style="font-size:.65rem;color:var(--ink3)">${co.exchange || ''}</span></td>
+      <td><div>${co.name || '–'}</div>${valCtx}${cats}</td>
       <td class="company-invest">${coAmt}</td>
       <td class="company-return">${coRet}</td>
       <td class="${cvCls}">${co.conviction || '–'}</td>
@@ -1411,12 +1511,23 @@ function buildInvestSection(code, d, countryAmt) {
     </tr>`;
   }).join('');
 
-  const fPoints  = calcForecastPoints(countryAmt, annualReturn, state.horizon);
-  const fBars    = renderForecastBars(fPoints, countryAmt);
-  const finalVal = fPoints.length ? fPoints[fPoints.length - 1].value : countryAmt;
-  const gainPct  = countryAmt > 0 ? ((finalVal - countryAmt) / countryAmt * 100).toFixed(1) : '0';
-  const gainCls  = parseFloat(gainPct) >= 0 ? 'gain-positive' : 'gain-negative';
-  const gainSign = parseFloat(gainPct) >= 0 ? '+' : '';
+  // Three-scenario forecast
+  const bearPct  = d.bearReturnPct  ?? d.baseReturnPct ?? (d.expectedAnnualReturnPct - 8) ?? 4;
+  const basePct  = d.baseReturnPct  ?? d.expectedAnnualReturnPct ?? 10;
+  const bullPct  = d.bullReturnPct  ?? (d.expectedAnnualReturnPct + 8) ?? 18;
+
+  function scenarioRow(label, cls, pct) {
+    const pts    = calcForecastPoints(countryAmt, pct, state.horizon);
+    const bars   = renderForecastBars(pts, countryAmt, `scenario-bars-wrap ${cls}`);
+    const endVal = pts.length ? pts[pts.length - 1].value : countryAmt;
+    const gain   = countryAmt > 0 ? ((endVal - countryAmt) / countryAmt * 100).toFixed(1) : '0';
+    const sign   = parseFloat(gain) >= 0 ? '+' : '';
+    return `<div class="scenario-row">
+      <div class="scenario-label ${cls}">${label}</div>
+      <div class="scenario-bars-wrap ${cls}" style="flex:1">${bars}</div>
+      <div class="scenario-result">${sign}${gain}% → ${formatAmount(Math.round(endVal), state.currency)}</div>
+    </div>`;
+  }
 
   return `
     <div class="card-section-title">Where to Invest — ${amtLabel} breakdown</div>
@@ -1426,13 +1537,10 @@ function buildInvestSection(code, d, countryAmt) {
         <tbody>${companiesHTML}</tbody>
       </table>
     </div>
-    <div class="card-section-title">Projected Growth — ${state.horizon} horizon · +${annualReturn}% p.a.</div>
-    <div class="forecast-meta">
-      ${amtLabel} → <strong>${formatAmount(Math.round(finalVal), state.currency)}</strong>
-      <span class="${gainCls}">(${gainSign}${gainPct}%)</span>
-      over ${state.horizon}
-    </div>
-    ${fBars}
+    <div class="card-section-title">Projected Growth — ${state.horizon} horizon (Bear / Base / Bull)</div>
+    ${scenarioRow('Bear', 'bear', bearPct)}
+    ${scenarioRow('Base', 'base', basePct)}
+    ${scenarioRow('Bull', 'bull', bullPct)}
   `;
 }
 
@@ -1452,6 +1560,12 @@ function renderCountryCard(code, d) {
     const ageText = ageDays >= 1 ? `${ageDays}d ago` : ageHrs >= 1 ? `${ageHrs}h ago` : 'just now';
     return `<span class="cache-pill cache-cached" title="Cached ${ageText}">Cached · ${ageText}</span>`;
   })();
+
+  const hasCurrencyRisk = LOCAL_CURRENCY[code] && LOCAL_CURRENCY[code] !== state.currency;
+  const currencyBadge   = hasCurrencyRisk
+    ? `<span class="currency-risk-badge">FX Risk: ${LOCAL_CURRENCY[code]}/${state.currency}</span>` : '';
+  const currencyNote    = hasCurrencyRisk && d.currencyRisk
+    ? `<div class="currency-risk-note">${d.currencyRisk}</div>` : '';
 
   const sectors = (d.sectors || []).map(s =>
     `<span class="sector-tag" title="${s.reason || ''}">${s.name}</span>`
@@ -1473,12 +1587,14 @@ function renderCountryCard(code, d) {
           <span class="confidence-label">Conf.</span>
         </div>
         <span class="card-alloc" id="card-alloc-${code}">${allocPct}% · ${allocAmt}</span>
+        ${currencyBadge}
         ${cachePill}
       </div>
     </div>
     <div class="card-body">
       <p class="card-summary">${d.summary || ''}</p>
       ${d.whyNow ? `<div class="card-why-now">${d.whyNow}</div>` : ''}
+      ${currencyNote}
       <div class="card-section-title">Sectors</div>
       <div class="sectors-list">${sectors}</div>
       <div id="card-invest-${code}">${buildInvestSection(code, d, countryAmt)}</div>
