@@ -13,7 +13,7 @@ const CACHE_DIR  = path.join(__dirname, 'cache');
 const CACHE_TTL  = 7 * 24 * 60 * 60 * 1000;
 const JWT_SECRET = process.env.JWT_SECRET || 'meridian_fallback_change_me';
 const MAX_DAILY  = 20;
-const MODEL      = 'claude-sonnet-4-5-20250514';
+const MODEL      = 'claude-sonnet-4-6';
 
 const rateLimits = {};
 if (!fs.existsSync(CACHE_DIR)) fs.mkdirSync(CACHE_DIR, { recursive: true });
@@ -172,8 +172,9 @@ app.post('/api/analyze', requireAuth, rateLimit, async (req, res) => {
         rateLimits[req.user.user].count++;
         res.json({ success: true, ...result });
     } catch (err) {
-        console.error('[/api/analyze]', err.response?.data || err.message);
-        res.status(err.response?.status || 500).json({ success: false, error: err.message });
+        const apiErr = err.response?.data?.error?.message || err.response?.data?.message;
+        console.error('[/api/analyze]', apiErr || err.message, err.response?.data || '');
+        res.status(err.response?.status || 500).json({ success: false, error: apiErr || err.message });
     }
 });
 
