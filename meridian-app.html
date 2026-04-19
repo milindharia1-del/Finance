@@ -1336,6 +1336,7 @@ function handleLogout() {
 
 // ── Setup Screen ─────────────────────────────────────────
 function buildSetupScreen() {
+  document.title = 'MERIDIAN — Investment Intelligence';
   // Currency dropdown
   const currSel = document.getElementById('currency-select');
   currSel.innerHTML = CURRENCIES.map(c =>
@@ -1463,6 +1464,8 @@ async function startAnalysis() {
   // Fetch sequentially
   let done = 0;
   for (const code of countries) {
+    const c = COUNTRIES.find(x => x.code === code);
+    updateProgress(done, countries.length, c?.name || code);
     try {
       const data = await analyseCountry(code);
       state.results[code] = data;
@@ -1471,7 +1474,7 @@ async function startAnalysis() {
       renderErrorCard(code, err.message);
     }
     done++;
-    updateProgress(done, countries.length);
+    updateProgress(done, countries.length, null);
   }
 
   // Show optimising spinner while we make the optimization call
@@ -1757,10 +1760,17 @@ async function refreshCountry(code) {
   }
 }
 
-function updateProgress(done, total) {
+function updateProgress(done, total, fetchingName) {
   document.getElementById('progress-count').textContent = `${done} / ${total}`;
   document.getElementById('progress-bar').style.width = total > 0 ? `${(done / total) * 100}%` : '0%';
-  if (done >= total && total > 0) {
+
+  const titleEl = document.getElementById('progress-title');
+  if (fetchingName) {
+    titleEl.textContent = `Fetching ${fetchingName} · ${done + 1} of ${total}`;
+    document.title = `⏳ ${done + 1}/${total} — MERIDIAN`;
+  } else if (done >= total && total > 0) {
+    titleEl.textContent = 'Analysing Markets';
+    document.title = 'MERIDIAN — Investment Intelligence';
     setTimeout(() => { document.getElementById('progress-wrap').style.display = 'none'; }, 800);
   }
 }
