@@ -68,7 +68,7 @@ with a ${horizon} investment horizon.
 
 Horizon focus: ${guide}
 
-Return ONLY this JSON:
+Return ONLY this JSON (no markdown, no code fences, no extra text):
 {
   "country": "${country}",
   "flag": "flag emoji",
@@ -79,25 +79,31 @@ Return ONLY this JSON:
   "whyNow": "1-2 sentences on the key opportunity for ${horizon} horizon",
   "horizon": "${horizon}",
   "riskProfile": "${riskProfile}",
+  "expectedAnnualReturnPct": 12,
   "sectors": [
     { "name": "Sector", "reason": "why this sector for ${horizon}" }
   ],
   "companies": [
-    { "ticker": "TICK", "name": "Company", "exchange": "Exchange", "reason": "thesis", "conviction": "High" }
+    { "ticker": "TICK", "name": "Company", "exchange": "Exchange", "reason": "1-sentence investment thesis", "conviction": "High", "allocationPct": 25, "expectedAnnualReturnPct": 15 }
   ],
   "risks": ["risk 1", "risk 2", "risk 3"],
   "suggestedAllocationPct": 20,
   "entryStrategy": "Lump sum"
 }
 
-Include 3 sectors and 3-5 companies suited to ${horizon} horizon and ${riskProfile} risk profile.`;
+Rules:
+- Include exactly 3 sectors
+- Include 4-5 companies; their allocationPct values MUST sum to exactly 100
+- expectedAnnualReturnPct at country level: realistic estimated compound annual return for the full ${horizon} horizon
+- expectedAnnualReturnPct at company level: that specific company's estimated annual return
+- conviction: "High", "Medium", or "Low" only`;
 
     // Retry up to 2 times
     for (let attempt = 1; attempt <= 2; attempt++) {
         try {
             const resp = await axios.post(
                 'https://api.anthropic.com/v1/messages',
-                { model: MODEL, max_tokens: 2048, system, messages: [{ role: 'user', content: user }] },
+                { model: MODEL, max_tokens: 2500, system, messages: [{ role: 'user', content: user }] },
                 {
                     headers: {
                         'x-api-key':         process.env.ANTHROPIC_API_KEY,

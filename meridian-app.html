@@ -634,6 +634,96 @@
   .conviction-medium { color: var(--gold-dark); font-weight: 500; font-size: .75rem; }
   .conviction-low    { color: var(--ink3); font-size: .75rem; }
 
+  .company-invest {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: .78rem;
+    font-weight: 600;
+    color: var(--gold-dark);
+    white-space: nowrap;
+  }
+
+  .company-return {
+    font-size: .75rem;
+    color: var(--green);
+    font-weight: 600;
+    white-space: nowrap;
+  }
+
+  /* ── Forecast bar chart ── */
+  .forecast-meta {
+    font-size: .82rem;
+    color: var(--ink2);
+    margin-bottom: .7rem;
+  }
+
+  .forecast-meta .gain-positive { color: var(--green); font-weight: 600; }
+  .forecast-meta .gain-negative { color: var(--red);   font-weight: 600; }
+
+  .forecast-bars {
+    display: flex;
+    align-items: flex-end;
+    gap: .3rem;
+    margin-bottom: 1rem;
+  }
+
+  .forecast-bar-wrap {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: .15rem;
+  }
+
+  .forecast-bar {
+    width: 100%;
+    background: linear-gradient(to top, var(--gold-dark), var(--gold-light));
+    border-radius: 2px 2px 0 0;
+  }
+
+  .forecast-bar-label {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: .6rem;
+    color: var(--ink3);
+  }
+
+  .forecast-bar-val {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: .58rem;
+    color: var(--ink2);
+    white-space: nowrap;
+  }
+
+  /* ── Portfolio combined forecast ── */
+  .pf-forecast {
+    margin-top: 1.5rem;
+    padding-top: 1.5rem;
+    border-top: 1px solid rgba(255,253,248,.12);
+  }
+
+  .pf-forecast-title {
+    font-size: .7rem;
+    letter-spacing: .15em;
+    text-transform: uppercase;
+    color: rgba(255,253,248,.45);
+    margin-bottom: .8rem;
+    font-weight: 500;
+  }
+
+  .pf-forecast-summary {
+    font-size: .9rem;
+    color: rgba(255,253,248,.85);
+    margin-bottom: 1rem;
+  }
+
+  .pf-forecast-summary strong { color: var(--gold); }
+
+  .pf-forecast-bars .forecast-bar {
+    background: linear-gradient(to top, rgba(201,168,76,.4), rgba(232,201,110,.7));
+  }
+
+  .pf-forecast-bars .forecast-bar-label,
+  .pf-forecast-bars .forecast-bar-val { color: rgba(255,253,248,.55); }
+
   .risks-list {
     list-style: none;
   }
@@ -1223,12 +1313,14 @@ async function analyseCountry(code) {
 }
 
 function renderCountryCard(code, d) {
-  const c       = COUNTRIES.find(x => x.code === code);
-  const outlook = (d.outlook || 'Neutral').toLowerCase();
-  const badgeCls = outlook.includes('bull') ? 'badge-bullish' : outlook.includes('bear') ? 'badge-bearish' : 'badge-neutral';
-  const allocPct = d.suggestedAllocationPct || 0;
-  const allocAmt = formatAmount((allocPct / 100) * state.amount, state.currency);
-  const cachePill = d.fromCache
+  const c            = COUNTRIES.find(x => x.code === code);
+  const outlook      = (d.outlook || 'Neutral').toLowerCase();
+  const badgeCls     = outlook.includes('bull') ? 'badge-bullish' : outlook.includes('bear') ? 'badge-bearish' : 'badge-neutral';
+  const allocPct     = d.suggestedAllocationPct || 0;
+  const countryAmt   = (allocPct / 100) * state.amount;
+  const allocAmt     = formatAmount(countryAmt, state.currency);
+  const annualReturn = d.expectedAnnualReturnPct || 10;
+  const cachePill    = d.fromCache
     ? `<span class="cache-pill cache-cached">Cached</span>`
     : `<span class="cache-pill cache-live">Live</span>`;
 
@@ -1236,17 +1328,33 @@ function renderCountryCard(code, d) {
     `<span class="sector-tag" title="${s.reason || ''}">${s.name}</span>`
   ).join('');
 
-  const companies = (d.companies || []).map(co => {
-    const cv = (co.conviction || '').toLowerCase();
-    const cvCls = cv === 'high' ? 'conviction-high' : cv === 'medium' ? 'conviction-medium' : 'conviction-low';
+  // Normalise company allocations in case Claude didn't sum to 100
+  const coList     = d.companies || [];
+  const coAllocSum = coList.reduce((s, co) => s + (co.allocationPct || 0), 0);
+  const normFactor = coAllocSum > 0 ? 100 / coAllocSum : 1;
+
+  const companiesHTML = coList.map(co => {
+    const cv     = (co.conviction || '').toLowerCase();
+    const cvCls  = cv === 'high' ? 'conviction-high' : cv === 'medium' ? 'conviction-medium' : 'conviction-low';
+    const coPct  = (co.allocationPct || 0) * normFactor;
+    const coAmt  = formatAmount((coPct / 100) * countryAmt, state.currency);
+    const coRet  = co.expectedAnnualReturnPct ? `+${co.expectedAnnualReturnPct}%` : '–';
     return `<tr>
-      <td><span class="ticker-badge">${co.ticker || '–'}</span></td>
+      <td><span class="ticker-badge">${co.ticker || '–'}</span><br><span style="font-size:.65rem;color:var(--ink3)">${co.exchange || ''}</span></td>
       <td>${co.name || '–'}</td>
-      <td>${co.exchange || '–'}</td>
+      <td class="company-invest">${coAmt}</td>
+      <td class="company-return">${coRet}</td>
       <td class="${cvCls}">${co.conviction || '–'}</td>
-      <td style="font-size:.78rem;color:var(--ink3)">${co.reason || ''}</td>
+      <td style="font-size:.75rem;color:var(--ink3)">${co.reason || ''}</td>
     </tr>`;
   }).join('');
+
+  // Forecast
+  const fPoints  = calcForecastPoints(countryAmt, annualReturn, state.horizon);
+  const fBars    = renderForecastBars(fPoints, countryAmt);
+  const finalVal = fPoints.length ? fPoints[fPoints.length - 1].value : countryAmt;
+  const gainPct  = countryAmt > 0 ? ((finalVal - countryAmt) / countryAmt * 100).toFixed(1) : '0';
+  const gainSign = gainPct >= 0 ? '+' : '';
 
   const risks = (d.risks || []).map(r => `<li>${r}</li>`).join('');
 
@@ -1272,11 +1380,20 @@ function renderCountryCard(code, d) {
       ${d.whyNow ? `<div class="card-why-now">${d.whyNow}</div>` : ''}
       <div class="card-section-title">Sectors</div>
       <div class="sectors-list">${sectors}</div>
-      <div class="card-section-title">Companies</div>
-      <table class="companies-table">
-        <thead><tr><th>Ticker</th><th>Name</th><th>Exchange</th><th>Conviction</th><th>Thesis</th></tr></thead>
-        <tbody>${companies}</tbody>
-      </table>
+      <div class="card-section-title">Where to Invest — ${allocAmt} breakdown</div>
+      <div style="overflow-x:auto">
+        <table class="companies-table">
+          <thead><tr><th>Ticker</th><th>Company</th><th>Invest</th><th>Exp. Return</th><th>Conviction</th><th>Thesis</th></tr></thead>
+          <tbody>${companiesHTML}</tbody>
+        </table>
+      </div>
+      <div class="card-section-title">Projected Growth — ${state.horizon} horizon · +${annualReturn}% p.a.</div>
+      <div class="forecast-meta">
+        ${allocAmt} → <strong>${formatAmount(Math.round(finalVal), state.currency)}</strong>
+        <span class="${gainPct >= 0 ? 'gain-positive' : 'gain-negative'}">(${gainSign}${gainPct}%)</span>
+        over ${state.horizon}
+      </div>
+      ${fBars}
       <div class="card-section-title">Key Risks</div>
       <ul class="risks-list">${risks}</ul>
     </div>
@@ -1347,6 +1464,16 @@ function renderPortfolioSummary() {
 
   const svgDonut = drawDonutChart(allocs);
 
+  // Combined portfolio forecast — weighted-average return
+  const weightedReturn = allocs.reduce((sum, a) => {
+    const ret = a.data.expectedAnnualReturnPct || 10;
+    return sum + (a.pct / 100) * ret;
+  }, 0);
+  const pfPoints  = calcForecastPoints(totalAmt, weightedReturn, state.horizon);
+  const pfFinalV  = pfPoints.length ? pfPoints[pfPoints.length - 1].value : totalAmt;
+  const pfGainPct = totalAmt > 0 ? ((pfFinalV - totalAmt) / totalAmt * 100).toFixed(1) : '0';
+  const pfBars    = renderForecastBars(pfPoints, totalAmt, 'pf-forecast-bars');
+
   document.getElementById('portfolio-summary-container').innerHTML = `
     <div class="portfolio-summary">
       <h2>Portfolio Allocation</h2>
@@ -1360,6 +1487,15 @@ function renderPortfolioSummary() {
           </div>
         </div>
         <div class="portfolio-legend">${legendHTML}</div>
+      </div>
+      <div class="pf-forecast">
+        <div class="pf-forecast-title">Combined Portfolio Projection — ${state.horizon} horizon</div>
+        <div class="pf-forecast-summary">
+          ${formattedTotal} → <strong>${formatAmount(Math.round(pfFinalV), state.currency)}</strong>
+          <span style="color:${pfGainPct >= 0 ? '#2e7d52' : '#c0392b'};font-weight:600">(+${pfGainPct}%)</span>
+          · Weighted avg. return ${weightedReturn.toFixed(1)}% p.a.
+        </div>
+        ${pfBars}
       </div>
     </div>
   `;
@@ -1397,6 +1533,42 @@ function drawDonutChart(allocs) {
   });
 
   return `<svg viewBox="0 0 ${size} ${size}" width="${size}" height="${size}">${paths.join('')}</svg>`;
+}
+
+// ── Forecast helpers ─────────────────────────────────────
+function calcForecastPoints(amount, annualReturnPct, horizonStr) {
+  const rate    = (annualReturnPct || 8) / 100;
+  const months  = { '6m': 6, '1y': 12, '2y': 24, '3y': 36, '4y': 48, '5y': 60, '10y': 120 }[horizonStr] || 12;
+  const points  = [];
+
+  if (months <= 6) {
+    for (let m = 1; m <= months; m++)
+      points.push({ label: `M${m}`, value: amount * Math.pow(1 + rate, m / 12) });
+  } else if (months <= 24) {
+    const quarters = months / 3;
+    for (let q = 1; q <= quarters; q++)
+      points.push({ label: `Q${q}`, value: amount * Math.pow(1 + rate, (q * 3) / 12) });
+  } else {
+    const years = months / 12;
+    for (let y = 1; y <= years; y++)
+      points.push({ label: `Y${y}`, value: amount * Math.pow(1 + rate, y) });
+  }
+  return points;
+}
+
+function renderForecastBars(points, baseAmount, extraClass = '') {
+  if (!points.length) return '';
+  const maxVal   = Math.max(...points.map(p => p.value));
+  const BAR_MAX  = 70;
+  const bars = points.map(p => {
+    const h = Math.max(Math.round((p.value / maxVal) * BAR_MAX), 4);
+    return `<div class="forecast-bar-wrap">
+      <div class="forecast-bar-val">${formatAmount(Math.round(p.value), state.currency)}</div>
+      <div class="forecast-bar" style="height:${h}px"></div>
+      <div class="forecast-bar-label">${p.label}</div>
+    </div>`;
+  }).join('');
+  return `<div class="forecast-bars ${extraClass}">${bars}</div>`;
 }
 
 // ── Cache helpers ────────────────────────────────────────
