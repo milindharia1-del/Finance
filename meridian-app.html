@@ -724,6 +724,20 @@
   .pf-forecast-bars .forecast-bar-label,
   .pf-forecast-bars .forecast-bar-val { color: rgba(255,253,248,.55); }
 
+  .disclaimer {
+    text-align: center;
+    font-size: .7rem;
+    color: var(--ink3);
+    padding: 1.5rem 0 .5rem;
+    line-height: 1.6;
+  }
+
+  .rate-badge {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: .72rem;
+    color: rgba(255,253,248,.4);
+  }
+
   .risks-list {
     list-style: none;
   }
@@ -1008,7 +1022,8 @@
 <section id="screen-results" class="screen">
   <header class="app-header">
     <div class="app-logo">MERIDIAN<span>Global Investment Intelligence</span></div>
-    <div style="display:flex;gap:.5rem;align-items:center;">
+    <div style="display:flex;gap:.75rem;align-items:center;">
+      <span class="rate-badge" id="rate-badge"></span>
       <button class="btn btn-outline" id="back-btn" style="font-size:.78rem;padding:.45rem .9rem;">← New Analysis</button>
       <button class="btn btn-ghost" id="logout-btn-results">Sign Out</button>
     </div>
@@ -1025,6 +1040,7 @@
     </div>
     <div class="cards-grid" id="cards-grid"></div>
     <div id="portfolio-summary-container"></div>
+    <p class="disclaimer">AI-generated analysis for educational purposes only. Not financial advice.<br>Past performance does not guarantee future results. Always consult a qualified financial adviser.</p>
   </div>
 </section>
 
@@ -1086,6 +1102,7 @@ const state = {
 
 // ── Init ────────────────────────────────────────────────
 function init() {
+  loadSetupState();
   state.token = sessionStorage.getItem('meridian_token');
   if (state.token) {
     buildSetupScreen();
@@ -1152,12 +1169,12 @@ function buildSetupScreen() {
   currSel.innerHTML = CURRENCIES.map(c =>
     `<option value="${c.code}" ${c.code === state.currency ? 'selected' : ''}>${c.label}</option>`
   ).join('');
-  currSel.addEventListener('change', () => { state.currency = currSel.value; });
+  currSel.addEventListener('change', () => { state.currency = currSel.value; saveSetupState(); });
 
   // Amount input
   const amtInput = document.getElementById('amount-input');
   amtInput.value = state.amount;
-  amtInput.addEventListener('input', () => { state.amount = parseFloat(amtInput.value) || 0; });
+  amtInput.addEventListener('input', () => { state.amount = parseFloat(amtInput.value) || 0; saveSetupState(); });
 
   // Horizon pills
   const pillsEl = document.getElementById('horizon-pills');
@@ -1169,6 +1186,7 @@ function buildSetupScreen() {
       state.horizon = pill.dataset.value;
       pillsEl.querySelectorAll('.horizon-pill').forEach(p => p.classList.remove('selected'));
       pill.classList.add('selected');
+      saveSetupState();
     });
   });
 
@@ -1182,6 +1200,7 @@ function buildSetupScreen() {
       state.riskProfile = btn.dataset.value;
       riskEl.querySelectorAll('.risk-btn').forEach(b => b.classList.remove('active'));
       btn.classList.add('active');
+      saveSetupState();
     });
   });
 
@@ -1212,16 +1231,19 @@ function toggleCountry(code, cardEl) {
     cardEl.classList.remove('selected');
   }
   document.getElementById('validation-msg').style.display = 'none';
+  saveSetupState();
 }
 
 function selectAll() {
   state.selectedCountries = COUNTRIES.map(c => c.code);
   document.querySelectorAll('.country-card').forEach(c => c.classList.add('selected'));
+  saveSetupState();
 }
 
 function clearAll() {
   state.selectedCountries = [];
   document.querySelectorAll('.country-card').forEach(c => c.classList.remove('selected'));
+  saveSetupState();
 }
 
 function validateAndAnalyse() {
@@ -1248,17 +1270,18 @@ async function startAnalysis() {
 
   const countries = state.selectedCountries;
   updateProgress(0, countries.length);
+  fetchStatus();
 
-  // Pre-render loading skeletons
+  // Pre-render loading skeletons with country names
   countries.forEach(code => {
     const c = COUNTRIES.find(x => x.code === code);
     cardsEl.insertAdjacentHTML('beforeend', `
       <div class="country-result-card" id="card-${code}">
         <div class="card-loading">
-          <div class="skeleton skeleton-flag"></div>
-          <div class="skeleton-lines">
-            <div class="skeleton skeleton-line" style="width:70%"></div>
-            <div class="skeleton skeleton-line" style="width:45%"></div>
+          <span style="font-size:1.6rem;flex-shrink:0">${c?.flag || '🌍'}</span>
+          <div class="skeleton-lines" style="flex:1">
+            <div style="font-size:.85rem;font-weight:500;color:var(--ink2);margin-bottom:.5rem">Analysing ${c?.name || code}…</div>
+            <div class="skeleton skeleton-line" style="width:60%"></div>
           </div>
         </div>
       </div>
@@ -1280,6 +1303,7 @@ async function startAnalysis() {
   }
 
   renderPortfolioSummary();
+  fetchStatus();
 }
 
 async function analyseCountry(code) {
@@ -1320,9 +1344,14 @@ function renderCountryCard(code, d) {
   const countryAmt   = (allocPct / 100) * state.amount;
   const allocAmt     = formatAmount(countryAmt, state.currency);
   const annualReturn = d.expectedAnnualReturnPct || 10;
-  const cachePill    = d.fromCache
-    ? `<span class="cache-pill cache-cached">Cached</span>`
-    : `<span class="cache-pill cache-live">Live</span>`;
+  const cachePill    = (() => {
+    if (!d.fromCache) return `<span class="cache-pill cache-live">Live</span>`;
+    const ageMs   = Date.now() - (d.cachedAt || d.timestamp || 0);
+    const ageDays = Math.floor(ageMs / 86400000);
+    const ageHrs  = Math.floor(ageMs / 3600000);
+    const ageText = ageDays >= 1 ? `${ageDays}d ago` : ageHrs >= 1 ? `${ageHrs}h ago` : 'just now';
+    return `<span class="cache-pill cache-cached" title="Cached ${ageText}">Cached · ${ageText}</span>`;
+  })();
 
   const sectors = (d.sectors || []).map(s =>
     `<span class="sector-tag" title="${s.reason || ''}">${s.name}</span>`
@@ -1371,7 +1400,7 @@ function renderCountryCard(code, d) {
           <span class="confidence-num">${d.confidence || '–'}%</span>
           <span class="confidence-label">Conf.</span>
         </div>
-        <span class="card-alloc">${allocPct}% · ${allocAmt}</span>
+        <span class="card-alloc" id="card-alloc-${code}">${allocPct}% · ${allocAmt}</span>
         ${cachePill}
       </div>
     </div>
@@ -1463,6 +1492,7 @@ function renderPortfolioSummary() {
   }).join('');
 
   const svgDonut = drawDonutChart(allocs);
+  updateCardHeaders(allocs);
 
   // Combined portfolio forecast — weighted-average return
   const weightedReturn = allocs.reduce((sum, a) => {
@@ -1558,17 +1588,66 @@ function calcForecastPoints(amount, annualReturnPct, horizonStr) {
 
 function renderForecastBars(points, baseAmount, extraClass = '') {
   if (!points.length) return '';
-  const maxVal   = Math.max(...points.map(p => p.value));
-  const BAR_MAX  = 70;
+  const maxVal    = Math.max(...points.map(p => p.value));
+  const BAR_MAX   = 70;
+  const showVals  = points.length <= 6; // hide value labels when too many bars to avoid overlap
   const bars = points.map(p => {
-    const h = Math.max(Math.round((p.value / maxVal) * BAR_MAX), 4);
+    const h   = Math.max(Math.round((p.value / maxVal) * BAR_MAX), 4);
+    const tip = formatAmount(Math.round(p.value), state.currency);
     return `<div class="forecast-bar-wrap">
-      <div class="forecast-bar-val">${formatAmount(Math.round(p.value), state.currency)}</div>
-      <div class="forecast-bar" style="height:${h}px"></div>
+      ${showVals ? `<div class="forecast-bar-val">${tip}</div>` : ''}
+      <div class="forecast-bar" style="height:${h}px" title="${p.label}: ${tip}"></div>
       <div class="forecast-bar-label">${p.label}</div>
     </div>`;
   }).join('');
   return `<div class="forecast-bars ${extraClass}">${bars}</div>`;
+}
+
+// ── Setup persistence ────────────────────────────────────
+function saveSetupState() {
+  try {
+    localStorage.setItem('meridian_setup', JSON.stringify({
+      amount:            state.amount,
+      currency:          state.currency,
+      horizon:           state.horizon,
+      riskProfile:       state.riskProfile,
+      selectedCountries: state.selectedCountries,
+    }));
+  } catch {}
+}
+
+function loadSetupState() {
+  try {
+    const saved = JSON.parse(localStorage.getItem('meridian_setup') || '{}');
+    if (saved.amount)            state.amount            = saved.amount;
+    if (saved.currency)          state.currency          = saved.currency;
+    if (saved.horizon)           state.horizon           = saved.horizon;
+    if (saved.riskProfile)       state.riskProfile       = saved.riskProfile;
+    if (saved.selectedCountries) state.selectedCountries = saved.selectedCountries;
+  } catch {}
+}
+
+// ── Card header normalization ─────────────────────────────
+function updateCardHeaders(allocs) {
+  allocs.forEach(a => {
+    const el = document.getElementById(`card-alloc-${a.code}`);
+    if (!el) return;
+    const amt = formatAmount(Math.round((a.pct / 100) * state.amount), state.currency);
+    el.textContent = `${a.pct}% · ${amt}`;
+  });
+}
+
+// ── Rate limit status ────────────────────────────────────
+async function fetchStatus() {
+  try {
+    const res  = await fetch(`${API_BASE}/api/status`, {
+      headers: { 'Authorization': `Bearer ${state.token}` },
+    });
+    const data = await res.json();
+    if (!data.success) return;
+    const el = document.getElementById('rate-badge');
+    if (el) el.textContent = `${data.remaining}/${data.max} analyses left today`;
+  } catch {}
 }
 
 // ── Cache helpers ────────────────────────────────────────

@@ -2,7 +2,8 @@ require('dotenv').config();
 const express = require('express');
 const jwt     = require('jsonwebtoken');
 const axios   = require('axios');
-const cors    = require('cors');
+const cors        = require('cors');
+const compression = require('compression');
 const bp      = require('body-parser');
 const fs      = require('fs');
 const path    = require('path');
@@ -19,6 +20,7 @@ const rateLimits = {};
 if (!fs.existsSync(CACHE_DIR)) fs.mkdirSync(CACHE_DIR, { recursive: true });
 
 // ── Middleware ────────────────────────────────────────────
+app.use(compression());
 app.use(cors({ origin: '*' }));
 app.use(bp.json({ limit: '1mb' }));
 app.get('/',                  (_q, r) => r.sendFile(path.join(__dirname, 'meridian-app.html')));
@@ -200,8 +202,15 @@ app.post('/api/analyze', requireAuth, rateLimit, async (req, res) => {
     }
 });
 
+// ── GET /api/status ───────────────────────────────────────
+app.get('/api/status', requireAuth, (req, res) => {
+    const id    = req.user.user, today = new Date().toDateString();
+    const used  = (rateLimits[id]?.date === today) ? rateLimits[id].count : 0;
+    res.json({ success: true, used, remaining: MAX_DAILY - used, max: MAX_DAILY });
+});
+
 // ── GET /health ───────────────────────────────────────────
-app.get('/health', (_q, r) => r.json({ status: 'ok', version: '4.0.0', timestamp: Date.now() }));
+app.get('/health', (_q, r) => r.json({ status: 'ok', version: '4.1.0', timestamp: Date.now() }));
 
 // ── Start ─────────────────────────────────────────────────
 const server = app.listen(PORT, '0.0.0.0', () => {
