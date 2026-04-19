@@ -896,6 +896,24 @@
     flex-shrink: 0;
   }
 
+  .card-collapse-btn {
+    background: none;
+    border: none;
+    cursor: pointer;
+    color: var(--ink3);
+    font-size: 1rem;
+    line-height: 1;
+    padding: .25rem .4rem;
+    border-radius: 2px;
+    transition: transform .22s ease, color .15s;
+    flex-shrink: 0;
+    margin-left: auto;
+  }
+  .card-collapse-btn:hover { color: var(--ink); background: var(--bg2); }
+  .country-result-card.collapsed .card-collapse-btn { transform: rotate(-90deg); }
+  .country-result-card.collapsed .card-body,
+  .country-result-card.collapsed .card-footer { display: none; }
+
   .card-footer {
     padding: .8rem 1.4rem;
     background: var(--bg);
@@ -1589,6 +1607,7 @@ function renderCountryCard(code, d) {
         <span class="card-alloc" id="card-alloc-${code}">${allocPct}% · ${allocAmt}</span>
         ${currencyBadge}
         ${cachePill}
+        <button class="card-collapse-btn" onclick="toggleCard('${code}')" title="Collapse / expand">▾</button>
       </div>
     </div>
     <div class="card-body">
@@ -1617,6 +1636,9 @@ function renderErrorCard(code, message) {
         <div class="card-country-name">${c.name}</div>
         <div class="card-exchange">${c.exchange}</div>
       </div>
+      <div class="card-badges">
+        <button class="card-collapse-btn" onclick="toggleCard('${code}')" title="Collapse / expand">▾</button>
+      </div>
     </div>
     <div class="card-error">
       <span class="error-icon">⚠</span>
@@ -1626,6 +1648,10 @@ function renderErrorCard(code, message) {
       </div>
     </div>
   `;
+}
+
+function toggleCard(code) {
+  document.getElementById('card-' + code).classList.toggle('collapsed');
 }
 
 function updateProgress(done, total) {
