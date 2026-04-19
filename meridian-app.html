@@ -1494,7 +1494,7 @@ async function analyseCountry(code) {
   if (cached) return { ...cached, fromCache: true };
 
   const controller = new AbortController();
-  const timer      = setTimeout(() => controller.abort(), 90000);
+  const timer      = setTimeout(() => controller.abort(), 50000);
 
   try {
     const res = await fetch(`${API_BASE}/api/analyze`, {
@@ -1791,11 +1791,15 @@ async function optimizePortfolio() {
   if (markets.length < 2) return null;
 
   try {
+    const optCtrl = new AbortController();
+    const optTimer = setTimeout(() => optCtrl.abort(), 30000);
     const res  = await fetch(`${API_BASE}/api/optimize`, {
       method:  'POST',
       headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${state.token}` },
       body:    JSON.stringify({ markets, horizon: state.horizon, riskProfile: state.riskProfile.toLowerCase() }),
+      signal:  optCtrl.signal,
     });
+    clearTimeout(optTimer);
     const data = await res.json();
     return data.success ? data : null;
   } catch { return null; }

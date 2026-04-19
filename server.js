@@ -145,9 +145,10 @@ Rules:
                 console.warn('[claude] response truncated — increase max_tokens');
             return extractJSON(resp.data.content);
         } catch (err) {
-            const retry = err.code === 'ECONNABORTED' || (err.response?.status >= 500);
+            // Only retry on server-side errors (529 rate-limit, 503), NOT on timeout
+            const retry = err.response?.status === 529 || err.response?.status === 503;
             if (retry && attempt === 1) {
-                console.log(`[claude] attempt 1 failed (${err.message}), retrying in 3s…`);
+                console.log(`[claude] attempt 1 failed (${err.response?.status}), retrying in 3s…`);
                 await new Promise(r => setTimeout(r, 3000));
             } else throw err;
         }
