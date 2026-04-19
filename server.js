@@ -202,6 +202,77 @@ app.post('/api/analyze', requireAuth, rateLimit, async (req, res) => {
     }
 });
 
+// ── POST /api/optimize ───────────────────────────────────
+async function callClaudeOptimize(markets, horizon, riskProfile) {
+    const system = `You are a portfolio optimization expert. Respond ONLY with valid raw JSON — no markdown, no explanation.`;
+
+    const marketLines = markets.map(m =>
+        `- code:"${m.code}" | ${m.outlook || 'Neutral'} outlook | ${m.confidence || 70}% confidence | ${m.expectedAnnualReturnPct || 10}% est. annual return`
+    ).join('\n');
+
+    const riskGuide = riskProfile === 'aggressive'
+        ? 'Concentrate heavily in highest-return markets — accept concentration risk.'
+        : riskProfile === 'conservative'
+        ? 'Favour diversification and lower-volatility markets even if returns are lower.'
+        : 'Balance return potential with reasonable diversification across markets.';
+
+    const user = `You are optimising a portfolio across ${markets.length} markets for a ${riskProfile} investor with a ${horizon} investment horizon. Goal: maximise risk-adjusted returns.
+
+Markets (use exact code strings in your response):
+${marketLines}
+
+Risk guidance: ${riskGuide}
+
+Return ONLY this JSON:
+{
+  "allocations": [
+    { "code": "exact_code_from_above", "allocationPct": 65, "rationale": "1-sentence reason for this weight" }
+  ],
+  "optimizationNote": "1-2 sentences explaining the overall allocation strategy"
+}
+
+Rules:
+- Include ALL ${markets.length} markets
+- allocationPct values MUST sum to exactly 100
+- Do NOT default to equal splits — differentiate based on fundamentals
+- Higher confidence + higher return = higher weight for aggressive; more even for conservative`;
+
+    const resp = await axios.post(
+        'https://api.anthropic.com/v1/messages',
+        { model: MODEL, max_tokens: 600, system, messages: [{ role: 'user', content: user }] },
+        {
+            headers: {
+                'x-api-key':         process.env.ANTHROPIC_API_KEY,
+                'anthropic-version': '2023-06-01',
+                'content-type':      'application/json',
+            },
+            timeout: 30000,
+        }
+    );
+    return extractJSON(resp.data.content);
+}
+
+app.post('/api/optimize', requireAuth, async (req, res) => {
+    const { markets, horizon = '1y', riskProfile = 'balanced' } = req.body || {};
+    if (!markets || !Array.isArray(markets) || markets.length === 0)
+        return res.status(400).json({ success: false, error: 'markets array required' });
+
+    if (markets.length === 1)
+        return res.json({ success: true, allocations: [{ code: markets[0].code, allocationPct: 100, rationale: 'Full allocation to single selected market.' }], optimizationNote: 'Only one market selected — 100% allocated.' });
+
+    try {
+        const result = await callClaudeOptimize(markets, horizon, riskProfile);
+        // Validate: all codes present, sum to ~100
+        const sum = (result.allocations || []).reduce((s, a) => s + (a.allocationPct || 0), 0);
+        if (Math.abs(sum - 100) > 5) throw new Error(`Allocations sum to ${sum}, not 100`);
+        res.json({ success: true, ...result });
+    } catch (err) {
+        const apiErr = err.response?.data?.error?.message || err.message;
+        console.error('[/api/optimize]', apiErr);
+        res.status(err.response?.status || 500).json({ success: false, error: apiErr });
+    }
+});
+
 // ── GET /api/status ───────────────────────────────────────
 app.get('/api/status', requireAuth, (req, res) => {
     const id    = req.user.user, today = new Date().toDateString();

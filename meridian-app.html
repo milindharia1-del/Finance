@@ -738,6 +738,48 @@
     color: rgba(255,253,248,.4);
   }
 
+  .optimising-state {
+    background: var(--ink);
+    border-radius: 8px;
+    padding: 1.5rem 2rem;
+    color: rgba(255,253,248,.6);
+    font-size: .85rem;
+    display: flex;
+    align-items: center;
+    gap: .75rem;
+    margin-top: 2rem;
+  }
+
+  @keyframes spin { to { transform: rotate(360deg); } }
+  .spinner {
+    width: 16px; height: 16px;
+    border: 2px solid rgba(201,168,76,.3);
+    border-top-color: var(--gold);
+    border-radius: 50%;
+    animation: spin .8s linear infinite;
+    flex-shrink: 0;
+  }
+
+  .opt-note {
+    font-size: .82rem;
+    color: rgba(255,253,248,.6);
+    background: rgba(255,253,248,.06);
+    border-left: 3px solid var(--gold);
+    padding: .6rem .9rem;
+    margin-bottom: 1.25rem;
+    border-radius: 0 2px 2px 0;
+    line-height: 1.55;
+  }
+
+  .legend-rationale {
+    font-size: .7rem;
+    color: rgba(255,253,248,.38);
+    line-height: 1.4;
+    margin-top: .1rem;
+    flex-basis: 100%;
+    padding-left: 1.6rem;
+  }
+
   .risks-list {
     list-style: none;
   }
@@ -1302,7 +1344,17 @@ async function startAnalysis() {
     updateProgress(done, countries.length);
   }
 
-  renderPortfolioSummary();
+  // Show optimising spinner while we make the optimization call
+  if (state.selectedCountries.length > 1) {
+    document.getElementById('portfolio-summary-container').innerHTML = `
+      <div class="optimising-state">
+        <div class="spinner"></div>
+        Optimising allocation across markets…
+      </div>
+    `;
+  }
+  const optimizedData = await optimizePortfolio();
+  renderPortfolioSummary(optimizedData);
   fetchStatus();
 }
 
@@ -1468,32 +1520,71 @@ function updateProgress(done, total) {
   }
 }
 
+// ── Portfolio Optimization ───────────────────────────────
+async function optimizePortfolio() {
+  if (state.selectedCountries.length <= 1) return null;
+
+  const markets = Object.entries(state.results)
+    .filter(([, d]) => d && d.outlook)
+    .map(([code, d]) => ({
+      code,
+      outlook:               d.outlook,
+      confidence:            d.confidence,
+      expectedAnnualReturnPct: d.expectedAnnualReturnPct,
+    }));
+
+  if (markets.length < 2) return null;
+
+  try {
+    const res  = await fetch(`${API_BASE}/api/optimize`, {
+      method:  'POST',
+      headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${state.token}` },
+      body:    JSON.stringify({ markets, horizon: state.horizon, riskProfile: state.riskProfile.toLowerCase() }),
+    });
+    const data = await res.json();
+    return data.success ? data : null;
+  } catch { return null; }
+}
+
 // ── Portfolio Summary + Donut ────────────────────────────
-function renderPortfolioSummary() {
-  const entries = Object.entries(state.results).filter(([, d]) => d && d.suggestedAllocationPct);
+function renderPortfolioSummary(optimizedData = null) {
+  const entries = Object.entries(state.results).filter(([, d]) => d && d.outlook);
   if (entries.length === 0) return;
 
-  // Normalise allocations to sum to 100
-  const rawTotal = entries.reduce((s, [, d]) => s + (d.suggestedAllocationPct || 0), 0);
-  const allocs   = entries.map(([code, d]) => ({
-    code,
-    country: COUNTRIES.find(x => x.code === code),
-    data:    d,
-    pct:     rawTotal > 0 ? Math.round((d.suggestedAllocationPct / rawTotal) * 100) : 0,
-  }));
+  let allocs;
+  if (optimizedData?.allocations?.length) {
+    // Use Claude's optimized allocation
+    allocs = optimizedData.allocations
+      .map(a => ({ ...a, data: state.results[a.code], country: COUNTRIES.find(x => x.code === a.code) }))
+      .filter(a => a.data);
+    // Renormalize in case Claude's sum is slightly off
+    const sum = allocs.reduce((s, a) => s + a.allocationPct, 0);
+    if (sum > 0) allocs = allocs.map(a => ({ ...a, pct: Math.round((a.allocationPct / sum) * 100) }));
+    else allocs = allocs.map(a => ({ ...a, pct: Math.round(100 / allocs.length) }));
+  } else {
+    // Fallback: normalize Claude's per-country suggestions
+    const rawTotal = entries.reduce((s, [, d]) => s + (d.suggestedAllocationPct || 0), 0);
+    allocs = entries.map(([code, d]) => ({
+      code,
+      country:   COUNTRIES.find(x => x.code === code),
+      data:      d,
+      pct:       rawTotal > 0 ? Math.round((d.suggestedAllocationPct / rawTotal) * 100) : Math.round(100 / entries.length),
+      rationale: null,
+    }));
+  }
 
-  const totalAmt     = state.amount;
-  const currencySymbol = CURRENCIES.find(c => c.code === state.currency)?.symbol || '$';
+  const totalAmt       = state.amount;
   const formattedTotal = formatAmount(totalAmt, state.currency);
 
   const legendHTML = allocs.map((a, i) => {
-    const amt = formatAmount((a.pct / 100) * totalAmt, state.currency);
+    const amt = formatAmount(Math.round((a.pct / 100) * totalAmt), state.currency);
     return `
-      <div class="legend-item">
+      <div class="legend-item" style="flex-wrap:wrap">
         <div class="legend-dot" style="background:${CHART_COLORS[i % CHART_COLORS.length]}"></div>
         <span class="legend-country">${a.country?.flag || ''} ${a.country?.name || a.code}</span>
         <span class="legend-pct">${a.pct}%</span>
         <span class="legend-amt">${amt}</span>
+        ${a.rationale ? `<span class="legend-rationale">${a.rationale}</span>` : ''}
       </div>
     `;
   }).join('');
@@ -1514,7 +1605,8 @@ function renderPortfolioSummary() {
   document.getElementById('portfolio-summary-container').innerHTML = `
     <div class="portfolio-summary">
       <h2>Portfolio Allocation</h2>
-      <p class="portfolio-subtitle">${state.horizon} horizon · ${state.riskProfile} risk · ${allocs.length} market${allocs.length > 1 ? 's' : ''}</p>
+      <p class="portfolio-subtitle">${state.horizon} horizon · ${state.riskProfile} risk · ${allocs.length} market${allocs.length > 1 ? 's' : ''} ${optimizedData ? '· AI-optimised' : ''}</p>
+      ${optimizedData?.optimizationNote ? `<div class="opt-note">${optimizedData.optimizationNote}</div>` : ''}
       <div class="portfolio-layout">
         <div class="donut-wrap">
           ${svgDonut}
