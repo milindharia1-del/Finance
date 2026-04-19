@@ -97,7 +97,7 @@ Include 3 sectors and 3-5 companies suited to ${horizon} horizon and ${riskProfi
         try {
             const resp = await axios.post(
                 'https://api.anthropic.com/v1/messages',
-                { model: MODEL, max_tokens: 1200, system, messages: [{ role: 'user', content: user }] },
+                { model: MODEL, max_tokens: 2048, system, messages: [{ role: 'user', content: user }] },
                 {
                     headers: {
                         'x-api-key':         process.env.ANTHROPIC_API_KEY,
@@ -107,6 +107,8 @@ Include 3 sectors and 3-5 companies suited to ${horizon} horizon and ${riskProfi
                     timeout: 45000,
                 }
             );
+            if (resp.data.stop_reason === 'max_tokens')
+                console.warn('[claude] response truncated — increase max_tokens');
             return extractJSON(resp.data.content);
         } catch (err) {
             const retry = err.code === 'ECONNABORTED' || (err.response?.status >= 500);
@@ -121,12 +123,26 @@ Include 3 sectors and 3-5 companies suited to ${horizon} horizon and ${riskProfi
 function extractJSON(content = []) {
     const texts = content.filter(b => b.type === 'text').map(b => b.text);
     for (let i = texts.length - 1; i >= 0; i--) {
-        const s = texts[i].replace(/^```(?:json)?\n?/m,'').replace(/\n?```$/m,'').trim();
-        for (const src of [s, texts[i].trim()]) {
-            try { const p = JSON.parse(src); if (p.outlook || p.sectors) return p; } catch {}
+        const raw = texts[i];
+        // Strip markdown fences if present
+        const stripped = raw.replace(/^```(?:json)?\s*/m, '').replace(/\s*```\s*$/m, '').trim();
+        // Try direct parse first (ideal case — Claude returned clean JSON)
+        for (const src of [stripped, raw.trim()]) {
+            try {
+                const p = JSON.parse(src);
+                if (p && typeof p === 'object' && !Array.isArray(p)) return p;
+            } catch {}
         }
-        const m = texts[i].match(/\{[\s\S]*?"(?:outlook|sectors)"[\s\S]*?\}/);
-        if (m) { try { return JSON.parse(m[0]); } catch {} }
+        // Fallback: extract the outermost {...} block
+        const start = raw.indexOf('{');
+        const end   = raw.lastIndexOf('}');
+        if (start !== -1 && end > start) {
+            try {
+                const p = JSON.parse(raw.slice(start, end + 1));
+                if (p && typeof p === 'object' && !Array.isArray(p)) return p;
+            } catch {}
+        }
+        console.error('[extractJSON] raw text (first 500):', raw.slice(0, 500));
     }
     throw new Error('Could not parse JSON from Claude response');
 }
