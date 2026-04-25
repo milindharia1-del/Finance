@@ -120,9 +120,12 @@ Rules:
 - catalysts: exactly 2 near-term events with approximate dates
 - conviction: "High", "Medium", or "Low" only`;
 
-    // Promise.race gives a guaranteed hard deadline on any Node.js version
-    const deadline = new Promise((_, reject) =>
-        setTimeout(() => reject(new Error('Claude API timed out after 40s')), 40000));
+    let _timer;
+    const deadline = new Promise((_, reject) => {
+        _timer = setTimeout(() => reject(new Error('Claude API timed out after 40s')), 40000);
+    });
+    // Prevent unhandled-rejection crash when apiCall wins the race and deadline fires later
+    deadline.catch(() => {});
 
     const apiCall = axios.post(
         'https://api.anthropic.com/v1/messages',
@@ -136,10 +139,16 @@ Rules:
         }
     );
 
-    const resp = await Promise.race([apiCall, deadline]);
-    if (resp.data.stop_reason === 'max_tokens')
-        console.warn('[claude] response truncated — increase max_tokens');
-    return extractJSON(resp.data.content);
+    try {
+        const resp = await Promise.race([apiCall, deadline]);
+        clearTimeout(_timer);
+        if (resp.data.stop_reason === 'max_tokens')
+            console.warn('[claude] response truncated — increase max_tokens');
+        return extractJSON(resp.data.content);
+    } catch (err) {
+        clearTimeout(_timer);
+        throw err;
+    }
 }
 
 function extractJSON(content = []) {
@@ -254,8 +263,11 @@ Rules:
 - Do NOT default to equal splits — differentiate based on fundamentals
 - Higher confidence + higher return = higher weight for aggressive; more even for conservative`;
 
-    const deadline = new Promise((_, reject) =>
-        setTimeout(() => reject(new Error('Optimize timed out after 25s')), 25000));
+    let _timer;
+    const deadline = new Promise((_, reject) => {
+        _timer = setTimeout(() => reject(new Error('Optimize timed out after 25s')), 25000);
+    });
+    deadline.catch(() => {});
 
     const apiCall = axios.post(
         'https://api.anthropic.com/v1/messages',
@@ -269,7 +281,14 @@ Rules:
         }
     );
 
-    return extractJSON((await Promise.race([apiCall, deadline])).data.content);
+    try {
+        const result = extractJSON((await Promise.race([apiCall, deadline])).data.content);
+        clearTimeout(_timer);
+        return result;
+    } catch (err) {
+        clearTimeout(_timer);
+        throw err;
+    }
 }
 
 app.post('/api/optimize', requireAuth, async (req, res) => {
