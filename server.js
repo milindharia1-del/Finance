@@ -19,6 +19,11 @@ const MODEL      = 'claude-sonnet-4-6';
 const rateLimits = {};
 if (!fs.existsSync(CACHE_DIR)) fs.mkdirSync(CACHE_DIR, { recursive: true });
 
+const MARKETAUX_COUNTRY = {
+    US:'us', UK:'gb', India:'in', Germany:'de', Japan:'jp', France:'fr', China:'cn',
+    Australia:'au', Canada:'ca', SouthKorea:'kr', Singapore:'sg', Brazil:'br', Switzerland:'ch',
+};
+
 // ── Middleware ────────────────────────────────────────────
 app.use(compression());
 app.use(cors({ origin: '*' }));
@@ -56,8 +61,27 @@ const HORIZON_GUIDANCE = {
     '10y': 'Generational thesis: AI/automation, energy transition, demographics.',
 };
 
+// ── Marketaux news ────────────────────────────────────────
+async function fetchMarketauxNews(country) {
+    const key  = process.env.MARKETAUX_API_KEY;
+    const code = MARKETAUX_COUNTRY[country];
+    if (!key || !code) return '';
+    try {
+        const resp = await axios.get('https://api.marketaux.com/v1/news/all', {
+            params: { api_token: key, countries: code, language: 'en', limit: 5, filter_entities: true },
+            timeout: 5000,
+        });
+        const articles = resp.data?.data || [];
+        if (!articles.length) return '';
+        return articles.map(a => `- [${(a.published_at||'').slice(0,10)}] ${a.title} (${a.source?.name||''})`).join('\n');
+    } catch (e) {
+        console.warn('[marketaux]', e.message);
+        return '';
+    }
+}
+
 // ── Claude call ───────────────────────────────────────────
-async function callClaude(country, horizon, riskProfile) {
+async function callClaude(country, horizon, riskProfile, newsContext = '') {
     const today = new Date().toISOString().split('T')[0];
     const guide = HORIZON_GUIDANCE[horizon] || HORIZON_GUIDANCE['1y'];
 
@@ -69,7 +93,7 @@ Start with { and end with }.`;
 with a ${horizon} investment horizon.
 
 Horizon focus: ${guide}
-
+${newsContext ? `\nRecent market headlines (incorporate these into your analysis):\n${newsContext}\n` : ''}
 Return ONLY this JSON (no markdown, no code fences, no extra text):
 {
   "country": "${country}",
@@ -110,7 +134,7 @@ Return ONLY this JSON (no markdown, no code fences, no extra text):
 
 Rules:
 - Include exactly 3 sectors
-- Include 4-5 companies; their allocationPct values MUST sum to exactly 100
+- Include 4-5 companies; every company MUST have a non-zero allocationPct; all allocationPct values MUST sum to exactly 100
 - bearReturnPct: realistic downside annual return (can be negative)
 - baseReturnPct: most likely annual return (same as expectedAnnualReturnPct)
 - bullReturnPct: realistic upside annual return — all three must differ
@@ -215,7 +239,8 @@ app.post('/api/analyze', requireAuth, rateLimit, async (req, res) => {
     const t0 = Date.now();
     console.log(`[analyze] ${country} — calling Claude…`);
     try {
-        const data   = await callClaude(country, horizon, riskProfile);
+        const newsContext = await fetchMarketauxNews(country);
+        const data   = await callClaude(country, horizon, riskProfile, newsContext);
         console.log(`[analyze] ${country} — done in ${((Date.now()-t0)/1000).toFixed(1)}s`);
         const result = { ...data, timestamp: Date.now(), fromCache: false };
         writeCache(country, horizon, riskProfile, result);
@@ -327,6 +352,7 @@ const server = app.listen(PORT, '0.0.0.0', () => {
     console.log(`\n  MERIDIAN v4.0  →  http://0.0.0.0:${PORT}\n`);
     console.log(`  Anthropic : ${process.env.ANTHROPIC_API_KEY ? '✓' : '✗ MISSING'}`);
     console.log(`  Password  : ${process.env.PASSWORD          ? '✓' : '✗ MISSING'}`);
-    console.log(`  JWT       : ${process.env.JWT_SECRET        ? '✓' : '⚠ fallback'}\n`);
+    console.log(`  JWT       : ${process.env.JWT_SECRET        ? '✓' : '⚠ fallback'}`);
+    console.log(`  Marketaux : ${process.env.MARKETAUX_API_KEY ? '✓' : '✗ (news disabled)'}\n`);
 });
 server.timeout = 120000;

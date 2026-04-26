@@ -1234,7 +1234,13 @@ const COUNTRIES = [
   { code: 'Germany', name: 'Germany',        flag: '🇩🇪', exchange: 'Xetra / FSE' },
   { code: 'Japan',   name: 'Japan',          flag: '🇯🇵', exchange: 'TSE' },
   { code: 'France',  name: 'France',         flag: '🇫🇷', exchange: 'Euronext Paris' },
-  { code: 'China',   name: 'China',          flag: '🇨🇳', exchange: 'SSE / SZSE' },
+  { code: 'China',       name: 'China',        flag: '🇨🇳', exchange: 'SSE / SZSE' },
+  { code: 'Australia',   name: 'Australia',    flag: '🇦🇺', exchange: 'ASX' },
+  { code: 'Canada',      name: 'Canada',       flag: '🇨🇦', exchange: 'TSX / CSE' },
+  { code: 'SouthKorea',  name: 'South Korea',  flag: '🇰🇷', exchange: 'KRX / KOSPI' },
+  { code: 'Singapore',   name: 'Singapore',    flag: '🇸🇬', exchange: 'SGX' },
+  { code: 'Brazil',      name: 'Brazil',       flag: '🇧🇷', exchange: 'B3 (Bovespa)' },
+  { code: 'Switzerland', name: 'Switzerland',  flag: '🇨🇭', exchange: 'SIX' },
 ];
 
 const HORIZONS = [
@@ -1259,7 +1265,7 @@ const RISK_PROFILES = ['Conservative', 'Balanced', 'Aggressive'];
 
 const CHART_COLORS = ['#c9a84c','#e8c96e','#a07828','#f0d8a0','#7a5c1c','#d4b060','#eed090'];
 
-const LOCAL_CURRENCY = { US:'USD', UK:'GBP', India:'INR', Germany:'EUR', France:'EUR', Japan:'JPY', China:'CNY' };
+const LOCAL_CURRENCY = { US:'USD', UK:'GBP', India:'INR', Germany:'EUR', France:'EUR', Japan:'JPY', China:'CNY', Australia:'AUD', Canada:'CAD', SouthKorea:'KRW', Singapore:'SGD', Brazil:'BRL', Switzerland:'CHF' };
 
 // ── State ───────────────────────────────────────────────
 const state = {
@@ -1521,13 +1527,15 @@ async function analyseCountry(code) {
 function buildInvestSection(code, d, countryAmt) {
   const coList     = d.companies || [];
   const coAllocSum = coList.reduce((s, co) => s + (co.allocationPct || 0), 0);
-  const normFactor = coAllocSum > 0 ? 100 / coAllocSum : 1;
+  // Fallback: if Claude returned no allocationPct, split equally across companies
+  const normFactor = coAllocSum > 0 ? 100 / coAllocSum : 100 / Math.max(coList.length, 1);
+  const equalShare = coAllocSum === 0 ? 100 / Math.max(coList.length, 1) : 0;
   const amtLabel   = formatAmount(Math.round(countryAmt), state.currency);
 
   const companiesHTML = coList.map(co => {
     const cv       = (co.conviction || '').toLowerCase();
     const cvCls    = cv === 'high' ? 'conviction-high' : cv === 'medium' ? 'conviction-medium' : 'conviction-low';
-    const coPct    = (co.allocationPct || 0) * normFactor;
+    const coPct    = coAllocSum > 0 ? (co.allocationPct || 0) * normFactor : equalShare;
     const coAmt    = formatAmount(Math.round((coPct / 100) * countryAmt), state.currency);
     const coRet    = co.expectedAnnualReturnPct ? `+${co.expectedAnnualReturnPct}%` : '–';
     const divBadge = co.dividendYield > 0 ? `<span class="dividend-badge">${co.dividendYield}% div</span>` : '';
