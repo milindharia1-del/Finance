@@ -1116,6 +1116,56 @@
     .setup-body, .results-body { padding: 1.5rem 1rem 3rem; }
     .card-header { gap: .6rem; }
   }
+
+  /* ── Outlook stripes ── */
+  .country-result-card.outlook-bullish { border-left: 3px solid var(--green); }
+  .country-result-card.outlook-bearish { border-left: 3px solid var(--red); }
+  .country-result-card.outlook-neutral { border-left: 3px solid var(--blue); }
+
+  /* ── Copy button ── */
+  .copy-card-btn {
+    display: inline-flex; align-items: center; gap: .25rem;
+    padding: .25rem .65rem; border-radius: 6px; border: 1px solid var(--rule);
+    background: none; color: var(--ink3); font-size: .73rem; cursor: pointer;
+  }
+  .copy-card-btn:hover { color: var(--gold-dark); border-color: var(--gold); }
+
+  /* ── Market comparison table ── */
+  .comparison-section { margin: 2rem 0 0; }
+  .comparison-section-title {
+    font-size: .68rem; letter-spacing: .15em; text-transform: uppercase;
+    color: var(--ink3); font-weight: 600; margin-bottom: .75rem;
+  }
+  .comparison-table {
+    width: 100%; border-collapse: collapse; font-size: .82rem;
+    background: var(--card); border: 1px solid var(--rule); border-radius: 6px;
+    overflow: hidden; box-shadow: var(--shadow);
+  }
+  .comparison-table th {
+    text-align: left; font-size: .65rem; letter-spacing: .12em;
+    text-transform: uppercase; color: var(--ink3); padding: .6rem .75rem;
+    border-bottom: 2px solid var(--rule); font-weight: 600; background: var(--bg2);
+  }
+  .comparison-table td { padding: .55rem .75rem; border-bottom: 1px solid var(--bg2); vertical-align: middle; }
+  .comparison-table tr:last-child td { border-bottom: none; }
+  .ct-country { font-weight: 500; }
+  .ct-return  { font-family: 'IBM Plex Mono', monospace; color: var(--green); font-weight: 500; }
+  .ct-scenarios { font-family: 'IBM Plex Mono', monospace; font-size: .75rem; color: var(--ink3); }
+  .ct-conf { font-family: 'IBM Plex Mono', monospace; font-size: .85rem; color: var(--gold); }
+
+  /* ── Print ── */
+  @media print {
+    .app-header, .progress-wrap, .card-footer, .rate-badge,
+    .card-collapse-btn, .copy-card-btn, #comparison-table-container { display: none !important; }
+    .country-result-card.collapsed .card-body { display: block !important; }
+    body { background: white !important; }
+    .results-body { padding: 0 !important; max-width: 100% !important; }
+    .country-result-card { break-inside: avoid; box-shadow: none !important; border: 1px solid #ccc !important; margin-bottom: 1rem; }
+    .country-result-card.outlook-bullish { border-left: 3px solid #2e7d52 !important; }
+    .country-result-card.outlook-bearish { border-left: 3px solid #c0392b !important; }
+    .country-result-card.outlook-neutral { border-left: 3px solid #1a4a7a !important; }
+    .portfolio-summary { background: #1a1710 !important; color: #fffdf8 !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+  }
 </style>
 </head>
 <body>
@@ -1194,6 +1244,7 @@
     <div class="app-logo">MERIDIAN<span>Global Investment Intelligence</span></div>
     <div style="display:flex;gap:.75rem;align-items:center;">
       <span class="rate-badge" id="rate-badge"></span>
+      <button class="btn btn-outline" onclick="window.print()" style="font-size:.78rem;padding:.45rem .9rem;" title="Print or save as PDF">⎙ Print</button>
       <button class="btn btn-outline" id="back-btn" style="font-size:.78rem;padding:.45rem .9rem;">← New Analysis</button>
       <button class="btn btn-ghost" id="logout-btn-results">Sign Out</button>
     </div>
@@ -1209,6 +1260,7 @@
       </div>
     </div>
     <div class="cards-grid" id="cards-grid"></div>
+    <div id="comparison-table-container"></div>
     <div id="portfolio-summary-container"></div>
     <p class="disclaimer">AI-generated analysis for educational purposes only. Not financial advice.<br>Past performance does not guarantee future results. Always consult a qualified financial adviser.</p>
   </div>
@@ -1444,6 +1496,7 @@ async function startAnalysis() {
   const summaryEl = document.getElementById('portfolio-summary-container');
   cardsEl.innerHTML = '';
   summaryEl.innerHTML = '';
+  document.getElementById('comparison-table-container').innerHTML = '';
   document.getElementById('progress-wrap').style.display = 'block';
   showScreen('results');
 
@@ -1643,7 +1696,8 @@ function renderCountryCard(code, d) {
 
   const risks = (d.risks || []).map(r => `<li>${r}</li>`).join('');
 
-  document.getElementById(`card-${code}`).innerHTML = `
+  const cardEl = document.getElementById(`card-${code}`);
+  cardEl.innerHTML = `
     <div class="card-header">
       <span class="card-flag">${d.flag || c.flag}</span>
       <div class="card-title-group">
@@ -1675,9 +1729,13 @@ function renderCountryCard(code, d) {
     <div class="card-footer">
       <span class="entry-strategy">Entry: <strong>${d.entryStrategy || 'Phased'}</strong></span>
       <span style="font-size:.75rem;color:var(--ink3)">Horizon: ${d.horizon || state.horizon} · ${d.riskProfile || state.riskProfile}</span>
+      <button class="copy-card-btn" onclick="copyCardSummary('${code}')" title="Copy analysis to clipboard">⎘ Copy</button>
       <button class="refresh-card-btn" onclick="refreshCountry('${code}')" title="Force a fresh analysis (bypasses cache)">↺ Refresh</button>
     </div>
   `;
+  // Colour-coded left border based on outlook
+  cardEl.classList.remove('outlook-bullish', 'outlook-bearish', 'outlook-neutral');
+  cardEl.classList.add(outlook.includes('bull') ? 'outlook-bullish' : outlook.includes('bear') ? 'outlook-bearish' : 'outlook-neutral');
 }
 
 function renderErrorCard(code, message) {
@@ -1814,9 +1872,41 @@ async function optimizePortfolio() {
 }
 
 // ── Portfolio Summary + Donut ────────────────────────────
+function renderComparisonTable(entries) {
+  const container = document.getElementById('comparison-table-container');
+  if (!container || entries.length < 2) { if (container) container.innerHTML = ''; return; }
+  const rows = entries.map(([code, d]) => {
+    const c       = COUNTRIES.find(x => x.code === code);
+    const outlook = (d.outlook || 'Neutral').toLowerCase();
+    const badgeCls = outlook.includes('bull') ? 'badge-bullish' : outlook.includes('bear') ? 'badge-bearish' : 'badge-neutral';
+    const expRet  = d.expectedAnnualReturnPct != null ? `+${d.expectedAnnualReturnPct}%` : '–';
+    const bear    = d.bearReturnPct != null ? `${d.bearReturnPct}%` : '–';
+    const base    = d.baseReturnPct != null  ? `+${d.baseReturnPct}%` : '–';
+    const bull    = d.bullReturnPct != null  ? `+${d.bullReturnPct}%` : '–';
+    return `<tr>
+      <td class="ct-country">${d.flag || c?.flag || ''} ${d.country || c?.name || code}</td>
+      <td><span class="badge ${badgeCls}">${d.outlook || 'Neutral'}</span></td>
+      <td class="ct-conf">${d.confidence != null ? d.confidence + '%' : '–'}</td>
+      <td class="ct-return">${expRet} p.a.</td>
+      <td class="ct-scenarios">${bear} / ${base} / ${bull}</td>
+    </tr>`;
+  }).join('');
+  container.innerHTML = `
+    <div class="comparison-section">
+      <div class="comparison-section-title">Market Comparison</div>
+      <table class="comparison-table">
+        <thead><tr>
+          <th>Market</th><th>Outlook</th><th>Confidence</th><th>Est. Return</th><th>Bear / Base / Bull</th>
+        </tr></thead>
+        <tbody>${rows}</tbody>
+      </table>
+    </div>`;
+}
+
 function renderPortfolioSummary(optimizedData = null) {
   const entries = Object.entries(state.results).filter(([, d]) => d && d.outlook);
   if (entries.length === 0) return;
+  renderComparisonTable(entries);
 
   let allocs;
   if (optimizedData?.allocations?.length) {
@@ -2059,6 +2149,42 @@ function showToast(msg) {
   el.classList.add('show');
   clearTimeout(toastTimer);
   toastTimer = setTimeout(() => el.classList.remove('show'), 3000);
+}
+
+// ── Copy card summary to clipboard ───────────────────────
+function copyCardSummary(code) {
+  const d = state.results[code];
+  if (!d) return;
+  const c = COUNTRIES.find(x => x.code === code);
+  const lines = [
+    `MERIDIAN — ${d.country || c?.name} Analysis`,
+    `Date: ${new Date().toLocaleDateString('en-US', { year:'numeric', month:'long', day:'numeric' })}`,
+    ``,
+    `Outlook: ${d.outlook} (${d.confidence}% confidence) | Exchange: ${d.exchange}`,
+    ``,
+    d.summary || '',
+    ``,
+    d.whyNow ? `Why Now: ${d.whyNow}` : null,
+    ``,
+    `Returns (p.a.): Expected ${d.expectedAnnualReturnPct}% | Bear ${d.bearReturnPct}% | Bull ${d.bullReturnPct}%`,
+    d.currencyRisk ? `Currency Risk: ${d.currencyRisk}` : null,
+    ``,
+    `Top Sectors: ${(d.sectors || []).map(s => s.name).join(', ')}`,
+    ``,
+    `Recommended Companies:`,
+    ...(d.companies || []).map(co =>
+      `  • ${co.ticker} — ${co.name} | ${co.allocationPct}% | ${co.expectedAnnualReturnPct}% p.a. | ${co.conviction} conviction`
+    ),
+    ``,
+    `Key Risks: ${(d.risks || []).join('; ')}`,
+    ``,
+    `Entry: ${d.entryStrategy} | Portfolio Allocation: ${d.suggestedAllocationPct}%`,
+    ``,
+    `Generated by MERIDIAN`,
+  ].filter(l => l !== null && l !== undefined);
+  navigator.clipboard.writeText(lines.join('\n'))
+    .then(() => showToast('Analysis copied to clipboard'))
+    .catch(() => showToast('Copy failed — please try again'));
 }
 
 // ── Boot ─────────────────────────────────────────────────
