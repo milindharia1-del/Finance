@@ -521,20 +521,10 @@
 
   .confidence-ring {
     display: flex;
-    flex-direction: column;
     align-items: center;
-    gap: .1rem;
-    min-width: 48px;
+    justify-content: center;
+    flex-shrink: 0;
   }
-
-  .confidence-num {
-    font-family: 'IBM Plex Mono', monospace;
-    font-size: 1rem;
-    font-weight: 500;
-    color: var(--gold);
-  }
-
-  .confidence-label { font-size: .6rem; letter-spacing: .1em; text-transform: uppercase; color: var(--ink3); }
 
   .card-alloc {
     background: var(--bg);
@@ -1117,6 +1107,23 @@
     .card-header { gap: .6rem; }
   }
 
+  /* ── Country search ── */
+  .country-search {
+    width: 100%;
+    padding: .5rem .8rem;
+    background: var(--card);
+    border: 1px solid var(--rule);
+    border-radius: var(--radius);
+    font-family: 'IBM Plex Sans', sans-serif;
+    font-size: .85rem;
+    color: var(--ink);
+    margin-bottom: .75rem;
+    outline: none;
+    transition: border-color .15s;
+  }
+  .country-search:focus { border-color: var(--gold); }
+  .country-search::placeholder { color: var(--ink3); }
+
   /* ── Outlook stripes ── */
   .country-result-card.outlook-bullish { border-left: 3px solid var(--green); }
   .country-result-card.outlook-bearish { border-left: 3px solid var(--red); }
@@ -1228,6 +1235,7 @@
         <span class="link-sm" id="clear-all-btn">Clear</span>
       </div>
     </div>
+    <input type="text" class="country-search" id="country-search" placeholder="Search markets…" autocomplete="off">
     <div class="country-grid" id="country-grid"></div>
 
     <hr class="divider">
@@ -1450,6 +1458,17 @@ function buildSetupScreen() {
   gridEl.querySelectorAll('.country-card').forEach(card => {
     card.addEventListener('click', () => toggleCountry(card.dataset.code, card));
   });
+
+  // Country search filter
+  const searchEl = document.getElementById('country-search');
+  searchEl.value = '';
+  searchEl.addEventListener('input', () => {
+    const q = searchEl.value.toLowerCase().trim();
+    gridEl.querySelectorAll('.country-card').forEach(card => {
+      const name = (card.querySelector('.name')?.textContent || '').toLowerCase();
+      card.style.display = !q || name.includes(q) ? '' : 'none';
+    });
+  });
 }
 
 function toggleCountry(code, cardEl) {
@@ -1532,6 +1551,12 @@ async function startAnalysis() {
       .catch(err  => { renderErrorCard(code, err.message); })
       .finally(()  => { done++; updateProgress(done, countries.length, null); })
   ));
+
+  // Notify user if any results came from cache
+  const cacheHits = Object.values(state.results).filter(d => d?.fromCache).length;
+  if (cacheHits > 0) {
+    showToast(`${cacheHits} market${cacheHits > 1 ? 's' : ''} loaded from cache — up to 7 days old`);
+  }
 
   // Show optimising spinner while we make the optimization call
   if (state.selectedCountries.length > 1) {
@@ -1706,10 +1731,7 @@ function renderCountryCard(code, d) {
       </div>
       <div class="card-badges">
         <span class="badge ${badgeCls}">${d.outlook || 'Neutral'}</span>
-        <div class="confidence-ring">
-          <span class="confidence-num">${d.confidence || '–'}%</span>
-          <span class="confidence-label">Conf.</span>
-        </div>
+        ${buildConfidenceRing(d.confidence)}
         <span class="card-alloc" id="card-alloc-${code}">${allocPct}% · ${allocAmt}</span>
         ${currencyBadge}
         ${cachePill}
@@ -2185,6 +2207,28 @@ function copyCardSummary(code) {
   navigator.clipboard.writeText(lines.join('\n'))
     .then(() => showToast('Analysis copied to clipboard'))
     .catch(() => showToast('Copy failed — please try again'));
+}
+
+// ── Confidence SVG ring ───────────────────────────────────
+function buildConfidenceRing(confidence) {
+  const pct   = Math.min(100, Math.max(0, confidence || 0));
+  const r     = 16;
+  const circ  = 2 * Math.PI * r;
+  const dash  = (pct / 100) * circ;
+  const color = pct >= 70 ? 'var(--green)' : pct >= 45 ? 'var(--gold)' : 'var(--red)';
+  return `
+    <div class="confidence-ring" title="${pct}% analyst confidence">
+      <svg width="46" height="46" viewBox="0 0 46 46">
+        <circle cx="23" cy="23" r="${r}" fill="none" stroke="var(--bg2)" stroke-width="3.5"/>
+        <circle cx="23" cy="23" r="${r}" fill="none" stroke="${color}" stroke-width="3.5"
+          stroke-dasharray="${dash.toFixed(1)} ${circ.toFixed(1)}"
+          transform="rotate(-90 23 23)" stroke-linecap="round"/>
+        <text x="23" y="20" text-anchor="middle" font-family="IBM Plex Mono,monospace"
+          font-size="9.5" font-weight="600" fill="${color}">${pct}%</text>
+        <text x="23" y="30" text-anchor="middle" font-family="IBM Plex Sans,sans-serif"
+          font-size="6" fill="var(--ink3)" letter-spacing="0.8">CONF</text>
+      </svg>
+    </div>`;
 }
 
 // ── Boot ─────────────────────────────────────────────────
