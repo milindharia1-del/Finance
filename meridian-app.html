@@ -1329,13 +1329,14 @@ const LOCAL_CURRENCY = { US:'USD', UK:'GBP', India:'INR', Germany:'EUR', France:
 
 // ── State ───────────────────────────────────────────────
 const state = {
-  token:            null,
-  amount:           10000,
-  currency:         'USD',
-  horizon:          '1y',
-  riskProfile:      'Balanced',
+  token:             null,
+  amount:            10000,
+  currency:          'USD',
+  horizon:           '1y',
+  riskProfile:       'Balanced',
   selectedCountries: [],
-  results:          {},
+  results:           {},
+  lastOptimizedData: null,
 };
 
 // ── Init ────────────────────────────────────────────────
@@ -1511,6 +1512,7 @@ function validateAndAnalyse() {
 // ── Analysis + Results ───────────────────────────────────
 async function startAnalysis() {
   state.results = {};
+  state.lastOptimizedData = null;
   const cardsEl   = document.getElementById('cards-grid');
   const summaryEl = document.getElementById('portfolio-summary-container');
   cardsEl.innerHTML = '';
@@ -1568,6 +1570,7 @@ async function startAnalysis() {
     `;
   }
   const optimizedData = await optimizePortfolio();
+  state.lastOptimizedData = optimizedData;
   renderPortfolioSummary(optimizedData);
   fetchStatus();
 }
@@ -1811,6 +1814,7 @@ async function retryCountry(code) {
     const data = await analyseCountry(code);
     state.results[code] = data;
     renderCountryCard(code, data);
+    renderPortfolioSummary(state.lastOptimizedData);
   } catch (err) {
     renderErrorCard(code, err.message);
   }
@@ -1840,6 +1844,7 @@ async function refreshCountry(code) {
     const data = await analyseCountry(code);
     state.results[code] = data;
     renderCountryCard(code, data);
+    renderPortfolioSummary(state.lastOptimizedData);
   } catch (err) {
     renderErrorCard(code, err.message);
   }
