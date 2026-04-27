@@ -573,21 +573,146 @@
     margin-bottom: .6rem;
   }
 
-  .sectors-list {
-    display: flex;
-    flex-wrap: wrap;
-    gap: .5rem;
-    margin-bottom: 1rem;
+  /* ── Sector bar chart ── */
+  .sector-bars { display: flex; flex-direction: column; gap: .45rem; margin-bottom: 1rem; }
+
+  .sector-bar-row {
+    display: grid;
+    grid-template-columns: 110px 1fr 34px;
+    column-gap: .6rem;
+    row-gap: .15rem;
+    align-items: center;
   }
 
-  .sector-tag {
-    padding: .3rem .7rem;
-    background: var(--bg2);
-    border-radius: 2px;
-    font-size: .78rem;
-    color: var(--ink2);
+  .sector-bar-name {
+    font-size: .75rem;
     font-weight: 500;
+    color: var(--ink2);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
   }
+
+  .sector-bar-track {
+    height: 5px;
+    background: var(--bg2);
+    border-radius: 3px;
+    overflow: hidden;
+  }
+
+  .sector-bar-fill {
+    height: 100%;
+    background: linear-gradient(to right, var(--gold-dark), var(--gold-light));
+    border-radius: 3px;
+    transition: width .6s ease;
+  }
+
+  .sector-bar-pct {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: .68rem;
+    color: var(--ink3);
+    text-align: right;
+  }
+
+  .sector-bar-reason {
+    grid-column: 2 / 4;
+    font-size: .68rem;
+    color: var(--ink3);
+    line-height: 1.4;
+  }
+
+  /* ── Dual currency ── */
+  .dual-currency {
+    color: var(--ink3);
+    font-size: .82em;
+    margin-left: .3em;
+  }
+
+  /* ── History panel ── */
+  .history-overlay {
+    display: none;
+    position: fixed;
+    inset: 0;
+    z-index: 200;
+    background: rgba(26,23,16,.55);
+    backdrop-filter: blur(3px);
+    justify-content: flex-end;
+  }
+
+  .history-overlay.open { display: flex; }
+
+  .history-panel {
+    background: var(--card);
+    border-left: 1px solid var(--rule);
+    width: 340px;
+    max-width: 95vw;
+    height: 100vh;
+    overflow-y: auto;
+    display: flex;
+    flex-direction: column;
+    box-shadow: var(--shadow-lg);
+  }
+
+  .history-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 1.1rem 1.25rem .8rem;
+    border-bottom: 1px solid var(--rule);
+    position: sticky;
+    top: 0;
+    background: var(--card);
+    z-index: 1;
+  }
+
+  .history-title {
+    font-family: 'Playfair Display', serif;
+    font-weight: 700;
+    font-size: 1rem;
+    color: var(--ink);
+  }
+
+  .history-close {
+    background: none;
+    border: none;
+    font-size: 1.4rem;
+    cursor: pointer;
+    color: var(--ink3);
+    padding: 0 .2rem;
+    line-height: 1;
+  }
+
+  .history-body {
+    padding: .9rem 1rem;
+    display: flex;
+    flex-direction: column;
+    gap: .45rem;
+    flex: 1;
+  }
+
+  .history-entry {
+    display: flex;
+    flex-direction: column;
+    gap: .2rem;
+    padding: .7rem .9rem;
+    border: 1px solid var(--rule);
+    border-radius: var(--radius);
+    cursor: pointer;
+    transition: border-color .15s, background .15s;
+  }
+
+  .history-entry:hover { border-color: var(--gold); background: rgba(201,168,76,.04); }
+
+  .history-entry-top {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: .5rem;
+  }
+
+  .history-entry-name { font-size: .88rem; font-weight: 500; color: var(--ink); }
+  .history-entry-meta { font-size: .7rem; color: var(--ink3); }
+  .history-empty { font-size: .85rem; color: var(--ink3); text-align: center; padding: 2.5rem 0; }
 
   .companies-table {
     width: 100%;
@@ -1292,6 +1417,7 @@
     <div class="section-label">
       Markets
       <div class="section-label-actions">
+        <span class="link-sm" id="history-btn">History</span>
         <span class="link-sm" id="select-all-btn">Select All</span>
         <span class="link-sm" id="clear-all-btn">Clear</span>
       </div>
@@ -1389,6 +1515,8 @@ const RISK_PROFILES = ['Conservative', 'Balanced', 'Aggressive'];
 
 const CHART_COLORS = ['#c9a84c','#e8c96e','#a07828','#f0d8a0','#7a5c1c','#d4b060','#eed090'];
 
+const CURRENCY_SYMBOLS = { USD:'$', GBP:'£', EUR:'€', INR:'₹', JPY:'¥', CNY:'¥', AUD:'A$', CAD:'C$', KRW:'₩', SGD:'S$', BRL:'R$', CHF:'Fr' };
+
 const LOCAL_CURRENCY = { US:'USD', UK:'GBP', India:'INR', Germany:'EUR', France:'EUR', Japan:'JPY', China:'CNY', Australia:'AUD', Canada:'CAD', SouthKorea:'KRW', Singapore:'SGD', Brazil:'BRL', Switzerland:'CHF' };
 
 // ── State ───────────────────────────────────────────────
@@ -1401,6 +1529,8 @@ const state = {
   selectedCountries: [],
   results:           {},
   lastOptimizedData: null,
+  fxRates:           null,
+  fxRatesAt:         null,
 };
 
 // ── Init ────────────────────────────────────────────────
@@ -1421,6 +1551,7 @@ function init() {
   document.getElementById('logout-btn-results').addEventListener('click', handleLogout);
   document.getElementById('back-btn').addEventListener('click', () => showScreen('setup'));
   document.getElementById('analyse-btn').addEventListener('click', validateAndAnalyse);
+  document.getElementById('history-btn').addEventListener('click', openHistory);
   document.getElementById('select-all-btn').addEventListener('click', selectAll);
   document.getElementById('clear-all-btn').addEventListener('click', clearAll);
 
@@ -1593,6 +1724,7 @@ async function startAnalysis() {
   setFavicon('loading');
   state.results = {};
   state.lastOptimizedData = null;
+  await fetchFXRates();
   const cardsEl   = document.getElementById('cards-grid');
   const summaryEl = document.getElementById('portfolio-summary-container');
   cardsEl.innerHTML = '';
@@ -1692,13 +1824,13 @@ function buildInvestSection(code, d, countryAmt) {
   // Fallback: if Claude returned no allocationPct, split equally across companies
   const normFactor = coAllocSum > 0 ? 100 / coAllocSum : 100 / Math.max(coList.length, 1);
   const equalShare = coAllocSum === 0 ? 100 / Math.max(coList.length, 1) : 0;
-  const amtLabel   = formatAmount(Math.round(countryAmt), state.currency);
+  const amtLabel   = formatDual(Math.round(countryAmt), state.currency, LOCAL_CURRENCY[code]);
 
   const companiesHTML = coList.map(co => {
     const cv       = (co.conviction || '').toLowerCase();
     const cvCls    = cv === 'high' ? 'conviction-high' : cv === 'medium' ? 'conviction-medium' : 'conviction-low';
     const coPct    = coAllocSum > 0 ? (co.allocationPct || 0) * normFactor : equalShare;
-    const coAmt    = formatAmount(Math.round((coPct / 100) * countryAmt), state.currency);
+    const coAmt    = formatDual(Math.round((coPct / 100) * countryAmt), state.currency, LOCAL_CURRENCY[code]);
     const coRet    = co.expectedAnnualReturnPct ? `+${co.expectedAnnualReturnPct}%` : '–';
     const divBadge = co.dividendYield > 0 ? `<span class="dividend-badge">${co.dividendYield}% div</span>` : '';
     const valCtx   = co.valuationContext ? `<div class="valuation-ctx">${co.valuationContext}</div>` : '';
@@ -1783,7 +1915,7 @@ function renderCountryCard(code, d) {
   const allocPct = d.suggestedAllocationPct || 0;
   // Use raw amount initially — updateCardAllocations will replace with normalized amount
   const countryAmt = (allocPct / 100) * state.amount;
-  const allocAmt   = formatAmount(Math.round(countryAmt), state.currency);
+  const allocAmt   = formatDual(Math.round(countryAmt), state.currency, LOCAL_CURRENCY[code]);
   const cachePill  = (() => {
     if (!d.fromCache) return `<span class="cache-pill cache-live">Live</span>`;
     const ageMs   = Date.now() - (d.cachedAt || d.timestamp || 0);
@@ -1799,9 +1931,16 @@ function renderCountryCard(code, d) {
   const currencyNote    = hasCurrencyRisk && d.currencyRisk
     ? `<div class="currency-risk-note">${d.currencyRisk}</div>` : '';
 
-  const sectors = (d.sectors || []).map(s =>
-    `<span class="sector-tag" title="${s.reason || ''}">${s.name}</span>`
-  ).join('');
+  const sectorList = d.sectors || [];
+  const sectorN    = sectorList.length || 1;
+  const barW       = Math.round(100 / sectorN);
+  const sectors    = sectorList.map(s => `
+    <div class="sector-bar-row">
+      <div class="sector-bar-name">${s.name}</div>
+      <div class="sector-bar-track"><div class="sector-bar-fill" style="width:${barW}%"></div></div>
+      <div class="sector-bar-pct">${barW}%</div>
+      ${s.reason ? `<div class="sector-bar-reason">${s.reason}</div>` : ''}
+    </div>`).join('');
 
   const risks = (d.risks || []).map(r => `<li>${r}</li>`).join('');
 
@@ -1827,7 +1966,7 @@ function renderCountryCard(code, d) {
       ${d.whyNow ? `<div class="card-why-now">${d.whyNow}</div>` : ''}
       ${currencyNote}
       <div class="card-section-title">Sectors</div>
-      <div class="sectors-list">${sectors}</div>
+      <div class="sector-bars">${sectors}</div>
       <div id="card-invest-${code}">${buildInvestSection(code, d, countryAmt)}</div>
       <div class="card-section-title">Key Risks</div>
       <ul class="risks-list">${risks}</ul>
@@ -2203,7 +2342,7 @@ function updateCardAllocations(allocs) {
 
     // Update alloc badge in header
     const badge = document.getElementById(`card-alloc-${a.code}`);
-    if (badge) badge.textContent = `${a.pct}% · ${formatAmount(normalizedAmt, state.currency)}`;
+    if (badge) badge.innerHTML = `${a.pct}% · ${formatDual(normalizedAmt, state.currency, LOCAL_CURRENCY[a.code])}`;
 
     // Rebuild the entire invest section (company table + forecast) with correct amount
     const investEl = document.getElementById(`card-invest-${a.code}`);
@@ -2243,10 +2382,116 @@ function setCache(key, data) {
 
 // ── Formatting helpers ───────────────────────────────────
 function formatAmount(amount, currencyCode) {
-  const sym  = CURRENCIES.find(c => c.code === currencyCode)?.symbol || '$';
-  const num  = Math.round(amount);
-  const fmt  = num.toLocaleString('en-US');
+  const sym = CURRENCY_SYMBOLS[currencyCode] || CURRENCIES.find(c => c.code === currencyCode)?.symbol || '$';
+  const num = Math.round(amount);
+  const fmt = num.toLocaleString('en-US');
   return `${sym}${fmt}`;
+}
+
+// ── FX rates + dual currency ─────────────────────────────
+async function fetchFXRates() {
+  // Skip if rates are less than 6 hours old
+  if (state.fxRates && state.fxRatesAt && Date.now() - state.fxRatesAt < 6 * 3600000) return;
+  try {
+    const res  = await fetch('https://api.frankfurter.app/latest?from=USD');
+    const data = await res.json();
+    state.fxRates          = { ...(data.rates || {}), USD: 1 };
+    state.fxRatesAt        = Date.now();
+  } catch { /* graceful — formatDual falls back to primary only */ }
+}
+
+function convertAmount(amount, fromCode, toCode) {
+  if (!state.fxRates || fromCode === toCode) return amount;
+  const toUSD   = fromCode === 'USD' ? 1 : 1 / (state.fxRates[fromCode] || 1);
+  const usdToTo = state.fxRates[toCode] || 1;
+  return amount * toUSD * usdToTo;
+}
+
+function formatDual(amount, userCurrency, localCurrCode) {
+  const primary = formatAmount(Math.round(amount), userCurrency);
+  if (!localCurrCode || localCurrCode === userCurrency || !state.fxRates) return primary;
+  const localAmt = convertAmount(amount, userCurrency, localCurrCode);
+  const localFmt = formatAmount(Math.round(localAmt), localCurrCode);
+  return `${primary}<span class="dual-currency">≈ ${localFmt}</span>`;
+}
+
+// ── History browser ──────────────────────────────────────
+function openHistory() {
+  const entries = [];
+  for (let i = 0; i < localStorage.length; i++) {
+    const key = localStorage.key(i);
+    if (!key || !key.startsWith('meridian_')) continue;
+    if (key === 'meridian_theme' || key === 'meridian_setup') continue;
+    const inner = key.slice('meridian_'.length);
+    const parts = inner.split('_');
+    if (parts.length < 3) continue;
+    try {
+      const obj = JSON.parse(localStorage.getItem(key));
+      if (!obj || !obj.cachedAt) continue;
+      entries.push({ key, code: parts[0], horizon: parts[1], risk: parts[2], cachedAt: obj.cachedAt, outlook: obj.outlook || 'Neutral', country: obj.country || parts[0], flag: obj.flag || '' });
+    } catch {}
+  }
+  entries.sort((a, b) => b.cachedAt - a.cachedAt);
+
+  const body = document.getElementById('history-body');
+  if (!entries.length) {
+    body.innerHTML = '<div class="history-empty">No cached analyses yet.<br>Run an analysis to populate history.</div>';
+  } else {
+    body.innerHTML = entries.map(e => {
+      const dt   = new Date(e.cachedAt);
+      const date = dt.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+      const time = dt.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' });
+      const ol   = (e.outlook || '').toLowerCase();
+      const cls  = ol.includes('bull') ? 'badge-bullish' : ol.includes('bear') ? 'badge-bearish' : 'badge-neutral';
+      return `<div class="history-entry" onclick="loadHistoryEntry('${e.key}')">
+        <div class="history-entry-top">
+          <span class="history-entry-name">${e.flag} ${e.country}</span>
+          <span class="badge ${cls}" style="font-size:.63rem;padding:.15rem .4rem">${e.outlook}</span>
+        </div>
+        <div class="history-entry-meta">${e.horizon} · ${e.risk} · ${date} ${time}</div>
+      </div>`;
+    }).join('');
+  }
+  document.getElementById('history-overlay').classList.add('open');
+}
+
+function closeHistory(e) {
+  if (e && e.target !== document.getElementById('history-overlay')) return;
+  document.getElementById('history-overlay').classList.remove('open');
+}
+
+function loadHistoryEntry(key) {
+  try {
+    const obj   = JSON.parse(localStorage.getItem(key));
+    if (!obj) return;
+    const inner = key.slice('meridian_'.length);
+    const parts = inner.split('_');
+    if (parts.length < 3) return;
+    const [code, horizon, risk] = parts;
+
+    // Horizon
+    document.querySelectorAll('.horizon-pill').forEach(p => {
+      p.classList.toggle('selected', p.dataset.value === horizon);
+    });
+    state.horizon = horizon;
+
+    // Risk
+    const riskNorm = RISK_PROFILES.find(r => r.toLowerCase() === risk.toLowerCase()) || 'Balanced';
+    document.querySelectorAll('.risk-btn').forEach(b => {
+      b.classList.toggle('active', b.dataset.value === riskNorm);
+    });
+    state.riskProfile = riskNorm;
+
+    // Country
+    state.selectedCountries = [code];
+    document.querySelectorAll('.country-card').forEach(card => {
+      card.classList.toggle('selected', card.dataset.code === code);
+    });
+
+    document.getElementById('history-overlay').classList.remove('open');
+    showScreen('setup');
+    showToast(`Loaded ${obj.country || code} — click Analyse to view`);
+  } catch {}
 }
 
 // ── UI helpers ───────────────────────────────────────────
@@ -2450,5 +2695,15 @@ function setFavicon(type) {
 // ── Boot ─────────────────────────────────────────────────
 init();
 </script>
+
+<div id="history-overlay" class="history-overlay" onclick="closeHistory(event)">
+  <div class="history-panel">
+    <div class="history-header">
+      <span class="history-title">Cached Analyses</span>
+      <button class="history-close" onclick="closeHistory()">×</button>
+    </div>
+    <div class="history-body" id="history-body"></div>
+  </div>
+</div>
 </body>
 </html>
