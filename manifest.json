@@ -1,0 +1,13 @@
+{
+  "name": "MERIDIAN — Global Investment Intelligence",
+  "short_name": "MERIDIAN",
+  "description": "AI-powered global stock market analysis",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#1a1710",
+  "theme_color": "#c9a84c",
+  "icons": [
+    { "src": "/icon.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any" },
+    { "src": "/icon.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "maskable" }
+  ]
+}

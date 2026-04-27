@@ -30,6 +30,13 @@ app.use(cors({ origin: '*' }));
 app.use(bp.json({ limit: '1mb' }));
 app.get('/',                  (_q, r) => r.sendFile(path.join(__dirname, 'meridian-app.html')));
 app.get('/meridian-app.html', (_q, r) => r.sendFile(path.join(__dirname, 'meridian-app.html')));
+app.get('/manifest.json',     (_q, r) => r.sendFile(path.join(__dirname, 'manifest.json')));
+app.get('/icon.svg',          (_q, r) => r.sendFile(path.join(__dirname, 'icon.svg')));
+app.get('/sw.js', (_q, r) => {
+    r.setHeader('Content-Type', 'application/javascript');
+    r.setHeader('Service-Worker-Allowed', '/');
+    r.sendFile(path.join(__dirname, 'sw.js'));
+});
 
 // ── Cache ─────────────────────────────────────────────────
 function cacheFile(country, horizon, risk) {

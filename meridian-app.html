@@ -4,7 +4,12 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>MERIDIAN — Global Investment Intelligence</title>
-<link rel="icon" id="favicon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='5' fill='%231a1710'/%3E%3Ctext x='16' y='24' font-family='Georgia%2Cserif' font-size='22' font-weight='700' fill='%23c9a84c' text-anchor='middle'%3EM%3C/text%3E%3C/svg%3E">
+<link rel="icon" id="favicon" href="/icon.svg">
+<link rel="manifest" href="/manifest.json">
+<meta name="theme-color" content="#c9a84c">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="MERIDIAN">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;600;700&family=IBM+Plex+Sans:wght@300;400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
@@ -1173,6 +1178,52 @@
     .country-result-card.outlook-bearish { border-left: 3px solid #c0392b !important; }
     .country-result-card.outlook-neutral { border-left: 3px solid #1a4a7a !important; }
     .portfolio-summary { background: #1a1710 !important; color: #fffdf8 !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+  /* ── Dark mode ── */
+  [data-theme="dark"] {
+    --bg:        #111009;
+    --bg2:       #1c1a13;
+    --card:      #201e16;
+    --ink:       #e8e4d8;
+    --ink2:      #b5af9a;
+    --ink3:      #6e6855;
+    --rule:      #2e2c21;
+    --shadow:    0 2px 16px rgba(0,0,0,.5);
+    --shadow-lg: 0 8px 40px rgba(0,0,0,.7);
+  }
+  /* Elements that hardcode var(--ink) as a dark surface — keep them dark in dark mode */
+  [data-theme="dark"] .app-header         { background: #0d0c09; }
+  [data-theme="dark"] #screen-login       { background: #0d0c09; }
+  [data-theme="dark"] .portfolio-summary  { background: #0d0c09; }
+  [data-theme="dark"] .optimising-state   { background: #0d0c09; }
+  /* Badge soft backgrounds — too light in dark mode */
+  [data-theme="dark"] .badge-bullish  { background: rgba(46,125,82,.22); }
+  [data-theme="dark"] .badge-bearish  { background: rgba(192,57,43,.22); }
+  [data-theme="dark"] .badge-neutral  { background: rgba(26,74,122,.22); }
+  [data-theme="dark"] .cache-live     { background: rgba(46,125,82,.18); }
+  [data-theme="dark"] .card-why-now   { background: rgba(201,168,76,.07); color: var(--gold-light); }
+  [data-theme="dark"] .country-card.selected { background: rgba(201,168,76,.1); border-color: rgba(201,168,76,.5); box-shadow: 0 0 0 2px rgba(201,168,76,.1); }
+  [data-theme="dark"] .country-search { background: var(--card); color: var(--ink); }
+  [data-theme="dark"] select,
+  [data-theme="dark"] input[type="number"],
+  [data-theme="dark"] input[type="text"] { color-scheme: dark; background: var(--card); color: var(--ink); border-color: var(--rule); }
+
+  /* ── Muted button (light-bg surfaces) ── */
+  .btn-muted {
+    background: none;
+    border: 1px solid var(--rule);
+    color: var(--ink3);
+    font-size: .8rem;
+    padding: .45rem .85rem;
+    border-radius: var(--radius);
+    cursor: pointer;
+    font-family: 'IBM Plex Sans', sans-serif;
+    transition: all .15s;
+  }
+  .btn-muted:hover { border-color: var(--gold); color: var(--gold-dark); }
+
+  /* ── Theme toggle ── */
+  .theme-toggle { font-size: .9rem; padding: .35rem .6rem !important; }
+
   /* ── Card fade-in ── */
   @keyframes fadeSlideIn {
     from { opacity: 0; transform: translateY(10px); }
@@ -1202,7 +1253,10 @@
 <section id="screen-setup" class="screen">
   <header class="app-header">
     <div class="app-logo">MERIDIAN<span>Global Investment Intelligence</span></div>
-    <button class="btn btn-ghost" id="logout-btn-setup">Sign Out</button>
+    <div style="display:flex;gap:.5rem;align-items:center;">
+      <button class="btn btn-ghost theme-toggle" id="theme-toggle-setup" onclick="toggleTheme()" title="Toggle dark mode">☾</button>
+      <button class="btn btn-ghost" id="logout-btn-setup">Sign Out</button>
+    </div>
   </header>
   <div class="setup-body">
     <h2 class="setup-title">Portfolio Setup</h2>
@@ -1248,6 +1302,7 @@
     <hr class="divider">
     <div class="setup-footer">
       <button class="btn btn-gold" id="analyse-btn">Analyse Markets →</button>
+      <button class="btn-muted" onclick="copyShareURL()" title="Copy a shareable link to this exact setup">⎘ Share Setup</button>
       <span class="validation-msg" id="validation-msg">Please select at least one market.</span>
     </div>
   </div>
@@ -1259,6 +1314,8 @@
     <div class="app-logo">MERIDIAN<span>Global Investment Intelligence</span></div>
     <div style="display:flex;gap:.75rem;align-items:center;">
       <span class="rate-badge" id="rate-badge"></span>
+      <button class="btn btn-ghost theme-toggle" onclick="toggleTheme()" title="Toggle dark mode">☾</button>
+      <button class="btn btn-outline" onclick="exportAllCSV()" style="font-size:.78rem;padding:.45rem .9rem;" title="Export all companies to CSV">⬇ CSV</button>
       <button class="btn btn-outline" onclick="window.print()" style="font-size:.78rem;padding:.45rem .9rem;" title="Print or save as PDF">⎙ Print</button>
       <button class="btn btn-outline" id="back-btn" style="font-size:.78rem;padding:.45rem .9rem;">← New Analysis</button>
       <button class="btn btn-ghost" id="logout-btn-results">Sign Out</button>
@@ -1348,7 +1405,9 @@ const state = {
 
 // ── Init ────────────────────────────────────────────────
 function init() {
+  applyTheme();
   loadSetupState();
+  loadFromURL();
   state.token = sessionStorage.getItem('meridian_token');
   if (state.token) {
     buildSetupScreen();
@@ -1372,6 +1431,11 @@ function init() {
       if (tag !== 'INPUT' && tag !== 'SELECT' && tag !== 'BUTTON') validateAndAnalyse();
     }
   });
+
+  // Register service worker for PWA install prompt
+  if ('serviceWorker' in navigator) {
+    navigator.serviceWorker.register('/sw.js').catch(() => {});
+  }
 }
 
 // ── Login ───────────────────────────────────────────────
@@ -1526,7 +1590,7 @@ function validateAndAnalyse() {
 
 // ── Analysis + Results ───────────────────────────────────
 async function startAnalysis() {
-  setFavicon(FAVICON_LOADING);
+  setFavicon('loading');
   state.results = {};
   state.lastOptimizedData = null;
   const cardsEl   = document.getElementById('cards-grid');
@@ -1588,7 +1652,7 @@ async function startAnalysis() {
   const optimizedData = await optimizePortfolio();
   state.lastOptimizedData = optimizedData;
   renderPortfolioSummary(optimizedData);
-  setFavicon(FAVICON_DEFAULT);
+  setFavicon('default');
   fetchStatus();
 }
 
@@ -1772,6 +1836,7 @@ function renderCountryCard(code, d) {
       <span class="entry-strategy">Entry: <strong>${d.entryStrategy || 'Phased'}</strong></span>
       <span style="font-size:.75rem;color:var(--ink3)">Horizon: ${d.horizon || state.horizon} · ${d.riskProfile || state.riskProfile}</span>
       <button class="copy-card-btn" onclick="copyCardSummary('${code}')" title="Copy analysis to clipboard">⎘ Copy</button>
+      <button class="copy-card-btn" onclick="exportCardCSV('${code}')" title="Download companies as CSV">⬇ CSV</button>
       <button class="refresh-card-btn" onclick="refreshCountry('${code}')" title="Force a fresh analysis (bypasses cache)">↺ Refresh</button>
     </div>
   `;
@@ -2257,13 +2322,110 @@ function buildConfidenceRing(confidence) {
     </div>`;
 }
 
-// ── Favicon helper ───────────────────────────────────────
-const FAVICON_DEFAULT = `<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><rect width='32' height='32' rx='5' fill='%231a1710'/><text x='16' y='24' font-family='Georgia,serif' font-size='22' font-weight='700' fill='%23c9a84c' text-anchor='middle'>M</text></svg>`;
-const FAVICON_LOADING = `<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><rect width='32' height='32' rx='5' fill='%231a1710'/><circle cx='16' cy='16' r='9' fill='none' stroke='%23c9a84c' stroke-width='3' stroke-dasharray='20 18' stroke-linecap='round'><animateTransform attributeName='transform' type='rotate' from='0 16 16' to='360 16 16' dur='0.9s' repeatCount='indefinite'/></circle></svg>`;
+// ── Dark mode ────────────────────────────────────────────
+function toggleTheme() {
+  const isDark = document.documentElement.dataset.theme === 'dark';
+  document.documentElement.dataset.theme = isDark ? '' : 'dark';
+  localStorage.setItem('meridian_theme', isDark ? 'light' : 'dark');
+  document.querySelectorAll('.theme-toggle').forEach(b => { b.textContent = isDark ? '☾' : '☀'; });
+}
 
-function setFavicon(svg) {
+function applyTheme() {
+  const saved = localStorage.getItem('meridian_theme');
+  if (saved === 'dark') {
+    document.documentElement.dataset.theme = 'dark';
+    document.querySelectorAll('.theme-toggle').forEach(b => { b.textContent = '☀'; });
+  }
+}
+
+// ── Shareable URL ─────────────────────────────────────────
+function loadFromURL() {
+  const params = new URLSearchParams(window.location.search);
+  if (!params.toString()) return;
+  const m = params.get('m');
+  const h = params.get('h');
+  const r = params.get('r');
+  const a = params.get('a');
+  const c = params.get('c');
+  if (m) state.selectedCountries = m.split(',').filter(code => COUNTRIES.find(x => x.code === code));
+  if (h && HORIZONS.find(x => x.value === h)) state.horizon = h;
+  if (r) { const match = RISK_PROFILES.find(x => x.toLowerCase() === r.toLowerCase()); if (match) state.riskProfile = match; }
+  if (a && !isNaN(parseFloat(a))) state.amount = parseFloat(a);
+  if (c && CURRENCIES.find(x => x.code === c)) state.currency = c;
+}
+
+function getShareURL() {
+  const url = new URL(window.location.href.split('?')[0]);
+  if (state.selectedCountries.length) url.searchParams.set('m', state.selectedCountries.join(','));
+  url.searchParams.set('h', state.horizon);
+  url.searchParams.set('r', state.riskProfile.toLowerCase());
+  url.searchParams.set('a', state.amount);
+  url.searchParams.set('c', state.currency);
+  return url.toString();
+}
+
+function copyShareURL() {
+  navigator.clipboard.writeText(getShareURL())
+    .then(() => showToast('Share link copied to clipboard'))
+    .catch(() => showToast('Copy failed — please try again'));
+}
+
+// ── CSV export ────────────────────────────────────────────
+function triggerDownload(filename, content, mime) {
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(new Blob([content], { type: mime }));
+  a.download = filename;
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(a.href);
+}
+
+function companiesToCSVRows(d, countryName) {
+  return (d.companies || []).map(co => [
+    countryName,
+    co.ticker  || '',
+    `"${(co.name    || '').replace(/"/g, '""')}"`,
+    co.exchange || '',
+    co.allocationPct || 0,
+    co.conviction || '',
+    co.expectedAnnualReturnPct || '',
+    co.dividendYield || 0,
+    `"${(co.reason  || '').replace(/"/g, '""')}"`,
+    `"${(co.valuationContext || '').replace(/"/g, '""')}"`,
+  ].join(','));
+}
+
+function exportCardCSV(code) {
+  const d = state.results[code];
+  if (!d?.companies?.length) return showToast('No company data to export');
+  const c = COUNTRIES.find(x => x.code === code);
+  const name = d.country || c?.name || code;
+  const header = 'Country,Ticker,Company,Exchange,Allocation%,Conviction,ExpReturn%,DivYield%,Thesis,Valuation';
+  const rows   = companiesToCSVRows(d, name);
+  triggerDownload(`meridian_${code}_${state.horizon}.csv`, [header, ...rows].join('\n'), 'text/csv');
+}
+
+function exportAllCSV() {
+  const entries = Object.entries(state.results).filter(([, d]) => d?.companies?.length);
+  if (!entries.length) return showToast('No analysis data to export');
+  const header = 'Country,Ticker,Company,Exchange,Allocation%,Conviction,ExpReturn%,DivYield%,Thesis,Valuation';
+  const rows   = entries.flatMap(([code, d]) => {
+    const c = COUNTRIES.find(x => x.code === code);
+    return companiesToCSVRows(d, d.country || c?.name || code);
+  });
+  triggerDownload(`meridian_all_${state.horizon}_${new Date().toISOString().slice(0,10)}.csv`, [header, ...rows].join('\n'), 'text/csv');
+}
+
+// ── Favicon helper ───────────────────────────────────────
+function setFavicon(type) {
   const el = document.getElementById('favicon');
-  if (el) el.href = 'data:image/svg+xml,' + svg;
+  if (!el) return;
+  if (type === 'loading') {
+    el.href = `data:image/svg+xml,${encodeURIComponent('<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32"><rect width="32" height="32" rx="5" fill="#1a1710"/><circle cx="16" cy="16" r="9" fill="none" stroke="#c9a84c" stroke-width="3" stroke-dasharray="20 18" stroke-linecap="round"><animateTransform attributeName="transform" type="rotate" from="0 16 16" to="360 16 16" dur="0.9s" repeatCount="indefinite"/></circle></svg>')}`;
+  } else {
+    el.href = '/icon.svg';
+  }
 }
 
 // ── Boot ─────────────────────────────────────────────────
