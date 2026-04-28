@@ -327,7 +327,7 @@
 
   .country-grid {
     display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(170px, 1fr));
+    grid-template-columns: repeat(auto-fill, minmax(min(100%, 155px), 1fr));
     gap: .6rem;
     margin-bottom: 1.75rem;
   }
@@ -1228,6 +1228,8 @@
   }
 
   /* ── Responsive ── */
+  .header-actions { display: flex; gap: .75rem; align-items: center; }
+
   @media (max-width: 640px) {
     h1 { font-size: 1.8rem; }
     .form-row-2, .form-row-3 { grid-template-columns: 1fr; }
@@ -1236,6 +1238,47 @@
     .app-header { padding: .8rem 1rem; }
     .setup-body, .results-body { padding: 1.5rem 1rem 3rem; }
     .card-header { gap: .6rem; }
+
+    /* Results header: hide overflow buttons */
+    .header-actions { gap: .4rem; }
+    .header-hide-mobile { display: none !important; }
+    #rate-badge { display: none !important; }
+    #back-btn { font-size: .72rem !important; padding: .35rem .65rem !important; }
+
+    /* Card footer: stack into 2 rows */
+    .card-footer { flex-direction: column; align-items: flex-start; gap: .4rem; padding: .75rem 1rem; }
+    .card-footer-actions { display: flex; gap: .5rem; }
+
+    /* Companies table → stacked label-value rows */
+    .companies-table:not(.dca-table) thead { display: none; }
+    .companies-table:not(.dca-table) tr {
+      display: block;
+      border: 1px solid var(--rule);
+      border-radius: var(--radius);
+      margin-bottom: .75rem;
+      padding: .5rem .75rem;
+    }
+    .companies-table:not(.dca-table) td {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      gap: .5rem;
+      padding: .35rem 0;
+      border-bottom: 1px solid var(--bg2);
+      font-size: .82rem;
+    }
+    .companies-table:not(.dca-table) tr td:last-child { border-bottom: none; }
+    .companies-table:not(.dca-table) td::before {
+      content: attr(data-label);
+      font-size: .63rem;
+      font-weight: 600;
+      letter-spacing: .1em;
+      text-transform: uppercase;
+      color: var(--ink3);
+      flex-shrink: 0;
+      width: 70px;
+      padding-top: .1rem;
+    }
   }
 
   /* ── Country search ── */
@@ -1274,6 +1317,7 @@
     font-size: .68rem; letter-spacing: .15em; text-transform: uppercase;
     color: var(--ink3); font-weight: 600; margin-bottom: .75rem;
   }
+  #comparison-table-container { overflow-x: auto; -webkit-overflow-scrolling: touch; }
   .comparison-table {
     width: 100%; border-collapse: collapse; font-size: .82rem;
     background: var(--card); border: 1px solid var(--rule); border-radius: 6px;
@@ -1438,11 +1482,11 @@
 <section id="screen-results" class="screen">
   <header class="app-header">
     <div class="app-logo">MERIDIAN<span>Global Investment Intelligence</span></div>
-    <div style="display:flex;gap:.75rem;align-items:center;">
+    <div class="header-actions">
       <span class="rate-badge" id="rate-badge"></span>
       <button class="btn btn-ghost theme-toggle" onclick="toggleTheme()" title="Toggle dark mode">☾</button>
-      <button class="btn btn-outline" onclick="exportAllCSV()" style="font-size:.78rem;padding:.45rem .9rem;" title="Export all companies to CSV">⬇ CSV</button>
-      <button class="btn btn-outline" onclick="window.print()" style="font-size:.78rem;padding:.45rem .9rem;" title="Print or save as PDF">⎙ Print</button>
+      <button class="btn btn-outline header-hide-mobile" onclick="exportAllCSV()" style="font-size:.78rem;padding:.45rem .9rem;" title="Export all companies to CSV">⬇ CSV</button>
+      <button class="btn btn-outline header-hide-mobile" onclick="window.print()" style="font-size:.78rem;padding:.45rem .9rem;" title="Print or save as PDF">⎙ Print</button>
       <button class="btn btn-outline" id="back-btn" style="font-size:.78rem;padding:.45rem .9rem;">← New Analysis</button>
       <button class="btn btn-ghost" id="logout-btn-results">Sign Out</button>
     </div>
@@ -1837,12 +1881,12 @@ function buildInvestSection(code, d, countryAmt) {
     const cats     = (co.catalysts || []).length
       ? `<ul class="catalyst-list">${co.catalysts.map(c => `<li>${c}</li>`).join('')}</ul>` : '';
     return `<tr>
-      <td><span class="ticker-badge">${co.ticker || '–'}</span> ${divBadge}<br><span style="font-size:.65rem;color:var(--ink3)">${co.exchange || ''}</span></td>
-      <td><div>${co.name || '–'}</div>${valCtx}${cats}</td>
-      <td class="company-invest">${coAmt}</td>
-      <td class="company-return">${coRet}</td>
-      <td class="${cvCls}">${co.conviction || '–'}</td>
-      <td style="font-size:.75rem;color:var(--ink3)">${co.reason || ''}</td>
+      <td data-label="Ticker"><span class="ticker-badge">${co.ticker || '–'}</span> ${divBadge}<br><span style="font-size:.65rem;color:var(--ink3)">${co.exchange || ''}</span></td>
+      <td data-label="Company"><div>${co.name || '–'}</div>${valCtx}${cats}</td>
+      <td data-label="Invest" class="company-invest">${coAmt}</td>
+      <td data-label="Return" class="company-return">${coRet}</td>
+      <td data-label="Conviction" class="${cvCls}">${co.conviction || '–'}</td>
+      <td data-label="Thesis" style="font-size:.75rem;color:var(--ink3)">${co.reason || ''}</td>
     </tr>`;
   }).join('');
 
@@ -1974,9 +2018,11 @@ function renderCountryCard(code, d) {
     <div class="card-footer">
       <span class="entry-strategy">Entry: <strong>${d.entryStrategy || 'Phased'}</strong></span>
       <span style="font-size:.75rem;color:var(--ink3)">Horizon: ${d.horizon || state.horizon} · ${d.riskProfile || state.riskProfile}</span>
-      <button class="copy-card-btn" onclick="copyCardSummary('${code}')" title="Copy analysis to clipboard">⎘ Copy</button>
-      <button class="copy-card-btn" onclick="exportCardCSV('${code}')" title="Download companies as CSV">⬇ CSV</button>
-      <button class="refresh-card-btn" onclick="refreshCountry('${code}')" title="Force a fresh analysis (bypasses cache)">↺ Refresh</button>
+      <div class="card-footer-actions">
+        <button class="copy-card-btn" onclick="copyCardSummary('${code}')" title="Copy analysis to clipboard">⎘ Copy</button>
+        <button class="copy-card-btn" onclick="exportCardCSV('${code}')" title="Download companies as CSV">⬇ CSV</button>
+        <button class="refresh-card-btn" onclick="refreshCountry('${code}')" title="Force a fresh analysis (bypasses cache)">↺ Refresh</button>
+      </div>
     </div>
   `;
   // Colour-coded left border + fade-in animation
