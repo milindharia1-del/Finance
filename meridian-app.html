@@ -1,0 +1,2755 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>MERIDIAN — Global Investment Intelligence</title>
+<link rel="icon" id="favicon" href="/icon.svg">
+<link rel="manifest" href="/manifest.json">
+<meta name="theme-color" content="#c9a84c">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="MERIDIAN">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;600;700&family=IBM+Plex+Sans:wght@300;400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --bg:        #f5f2eb;
+    --bg2:       #ede9e0;
+    --gold:      #c9a84c;
+    --gold-light:#e8c96e;
+    --gold-dark: #a07828;
+    --ink:       #1a1710;
+    --ink2:      #3d3928;
+    --ink3:      #7a7460;
+    --rule:      #d8d2c4;
+    --card:      #fffdf8;
+    --red:       #c0392b;
+    --green:     #2e7d52;
+    --blue:      #1a4a7a;
+    --radius:    4px;
+    --shadow:    0 2px 16px rgba(26,23,16,.08);
+    --shadow-lg: 0 8px 40px rgba(26,23,16,.14);
+  }
+
+  html, body {
+    height: 100%;
+    font-family: 'IBM Plex Sans', sans-serif;
+    background: var(--bg);
+    color: var(--ink);
+    font-size: 15px;
+    line-height: 1.6;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  /* ── Typography ── */
+  h1, h2, h3, h4 { font-family: 'Playfair Display', serif; font-weight: 700; line-height: 1.2; }
+  h1 { font-size: 2.4rem; }
+  h2 { font-size: 1.7rem; }
+  h3 { font-size: 1.25rem; }
+  h4 { font-size: 1rem; }
+
+  .mono { font-family: 'IBM Plex Mono', monospace; }
+  .muted { color: var(--ink3); }
+  .gold  { color: var(--gold); }
+
+  /* ── Screens ── */
+  .screen { display: none; min-height: 100vh; }
+  .screen.active { display: flex; }
+
+  /* ── LOGIN SCREEN ── */
+  #screen-login {
+    align-items: center;
+    justify-content: center;
+    background: var(--ink);
+    background-image:
+      radial-gradient(ellipse 80% 60% at 50% -20%, rgba(201,168,76,.18) 0%, transparent 70%),
+      repeating-linear-gradient(0deg, transparent, transparent 79px, rgba(201,168,76,.04) 80px),
+      repeating-linear-gradient(90deg, transparent, transparent 79px, rgba(201,168,76,.04) 80px);
+  }
+
+  .login-box {
+    background: rgba(255,253,248,.04);
+    border: 1px solid rgba(201,168,76,.25);
+    border-radius: 8px;
+    padding: 3rem 2.5rem;
+    width: 100%;
+    max-width: 380px;
+    text-align: center;
+    backdrop-filter: blur(12px);
+  }
+
+  .login-logo {
+    font-family: 'Playfair Display', serif;
+    font-size: 1.6rem;
+    font-weight: 700;
+    letter-spacing: .12em;
+    color: var(--gold);
+    margin-bottom: .3rem;
+  }
+
+  .login-tagline {
+    font-size: .75rem;
+    letter-spacing: .2em;
+    text-transform: uppercase;
+    color: rgba(201,168,76,.55);
+    margin-bottom: 2.5rem;
+  }
+
+  .login-box label {
+    display: block;
+    text-align: left;
+    font-size: .7rem;
+    letter-spacing: .15em;
+    text-transform: uppercase;
+    color: rgba(255,253,248,.45);
+    margin-bottom: .5rem;
+  }
+
+  .login-box input[type="password"] {
+    width: 100%;
+    background: rgba(255,253,248,.06);
+    border: 1px solid rgba(201,168,76,.2);
+    border-radius: var(--radius);
+    padding: .75rem 1rem;
+    color: #fffdf8;
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: .95rem;
+    letter-spacing: .1em;
+    outline: none;
+    transition: border-color .2s;
+    margin-bottom: 1.25rem;
+  }
+
+  .login-box input[type="password"]:focus {
+    border-color: var(--gold);
+  }
+
+  .login-error {
+    display: none;
+    font-size: .8rem;
+    color: #e07070;
+    margin-bottom: 1rem;
+  }
+
+  /* ── Buttons ── */
+  .btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: .5rem;
+    padding: .7rem 1.5rem;
+    border: none;
+    border-radius: var(--radius);
+    font-family: 'IBM Plex Sans', sans-serif;
+    font-weight: 500;
+    font-size: .85rem;
+    letter-spacing: .06em;
+    cursor: pointer;
+    transition: all .2s;
+    text-decoration: none;
+  }
+
+  .btn-gold {
+    background: var(--gold);
+    color: var(--ink);
+  }
+  .btn-gold:hover { background: var(--gold-light); }
+  .btn-gold:active { background: var(--gold-dark); }
+  .btn-gold:disabled { opacity: .5; cursor: not-allowed; }
+
+  .btn-outline {
+    background: transparent;
+    border: 1px solid var(--rule);
+    color: var(--ink2);
+  }
+  .btn-outline:hover { border-color: var(--gold); color: var(--gold); }
+
+  .btn-ghost {
+    background: transparent;
+    color: var(--ink3);
+    padding: .5rem .8rem;
+    font-size: .8rem;
+  }
+  .btn-ghost:hover { color: var(--ink); }
+
+  .btn-full { width: 100%; }
+
+  /* ── SETUP SCREEN ── */
+  #screen-setup {
+    flex-direction: column;
+    align-items: center;
+    padding: 0;
+  }
+
+  .app-header {
+    width: 100%;
+    background: var(--ink);
+    border-bottom: 1px solid rgba(201,168,76,.2);
+    padding: .9rem 2rem;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex-shrink: 0;
+  }
+
+  .app-logo {
+    font-family: 'Playfair Display', serif;
+    font-size: 1.1rem;
+    font-weight: 700;
+    letter-spacing: .1em;
+    color: var(--gold);
+  }
+
+  .app-logo span { color: rgba(201,168,76,.45); font-size: .65rem; letter-spacing: .2em; display: block; margin-top: -.1rem; }
+
+  .setup-body {
+    flex: 1;
+    width: 100%;
+    max-width: 820px;
+    padding: 2.5rem 1.5rem 4rem;
+  }
+
+  .setup-title {
+    margin-bottom: .4rem;
+  }
+
+  .setup-subtitle {
+    color: var(--ink3);
+    font-size: .9rem;
+    margin-bottom: 2.5rem;
+  }
+
+  /* ── Form rows ── */
+  .form-row {
+    display: grid;
+    gap: 1rem;
+    margin-bottom: 1.75rem;
+  }
+
+  .form-row-2 { grid-template-columns: 1fr 1fr; }
+  .form-row-3 { grid-template-columns: 1fr 1fr 1fr; }
+
+  .field label {
+    display: block;
+    font-size: .7rem;
+    letter-spacing: .14em;
+    text-transform: uppercase;
+    color: var(--ink3);
+    margin-bottom: .45rem;
+    font-weight: 500;
+  }
+
+  .field input[type="number"],
+  .field select {
+    width: 100%;
+    background: var(--card);
+    border: 1px solid var(--rule);
+    border-radius: var(--radius);
+    padding: .65rem .9rem;
+    font-family: 'IBM Plex Sans', sans-serif;
+    font-size: .95rem;
+    color: var(--ink);
+    outline: none;
+    transition: border-color .2s;
+    appearance: none;
+    -webkit-appearance: none;
+  }
+
+  .field input[type="number"]:focus,
+  .field select:focus {
+    border-color: var(--gold);
+    box-shadow: 0 0 0 3px rgba(201,168,76,.12);
+  }
+
+  .select-wrap { position: relative; }
+  .select-wrap::after {
+    content: '▾';
+    position: absolute;
+    right: .9rem;
+    top: 50%;
+    transform: translateY(-50%);
+    color: var(--ink3);
+    pointer-events: none;
+    font-size: .8rem;
+  }
+
+  /* ── Horizon pills ── */
+  .field-label {
+    font-size: .7rem;
+    letter-spacing: .14em;
+    text-transform: uppercase;
+    color: var(--ink3);
+    margin-bottom: .6rem;
+    font-weight: 500;
+  }
+
+  .horizon-pills {
+    display: flex;
+    flex-wrap: wrap;
+    gap: .45rem;
+  }
+
+  .horizon-pill {
+    padding: .4rem .9rem;
+    border: 1px solid var(--rule);
+    border-radius: 2px;
+    background: var(--card);
+    font-size: .8rem;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all .15s;
+    color: var(--ink2);
+    user-select: none;
+  }
+
+  .horizon-pill:hover { border-color: var(--gold); color: var(--gold); }
+  .horizon-pill.selected { background: var(--gold); border-color: var(--gold); color: var(--ink); }
+
+  /* ── Country grid ── */
+  .section-label {
+    font-size: .7rem;
+    letter-spacing: .14em;
+    text-transform: uppercase;
+    color: var(--ink3);
+    margin-bottom: .75rem;
+    font-weight: 500;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+
+  .section-label-actions { display: flex; gap: .5rem; }
+  .link-sm { font-size: .75rem; cursor: pointer; color: var(--gold); text-decoration: underline; letter-spacing: 0; text-transform: none; font-weight: 400; }
+
+  .country-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(min(100%, 155px), 1fr));
+    gap: .6rem;
+    margin-bottom: 1.75rem;
+  }
+
+  .country-card {
+    display: flex;
+    align-items: center;
+    gap: .7rem;
+    padding: .75rem 1rem;
+    background: var(--card);
+    border: 1px solid var(--rule);
+    border-radius: var(--radius);
+    cursor: pointer;
+    transition: all .15s;
+    user-select: none;
+  }
+
+  .country-card:hover { border-color: var(--gold-light); }
+
+  .country-card.selected {
+    background: #fdfbf3;
+    border-color: var(--gold);
+    box-shadow: 0 0 0 2px rgba(201,168,76,.18);
+  }
+
+  .country-card .flag { font-size: 1.4rem; line-height: 1; }
+
+  .country-card .name {
+    font-size: .85rem;
+    font-weight: 500;
+    color: var(--ink2);
+  }
+
+  .country-card .exch {
+    font-size: .7rem;
+    color: var(--ink3);
+    font-family: 'IBM Plex Mono', monospace;
+  }
+
+  .country-card .check {
+    margin-left: auto;
+    width: 16px;
+    height: 16px;
+    border: 1.5px solid var(--rule);
+    border-radius: 2px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    transition: all .15s;
+  }
+
+  .country-card.selected .check {
+    background: var(--gold);
+    border-color: var(--gold);
+  }
+
+  .country-card.selected .check::after {
+    content: '';
+    width: 9px;
+    height: 5px;
+    border-left: 2px solid var(--ink);
+    border-bottom: 2px solid var(--ink);
+    transform: rotate(-45deg) translateY(-1px);
+    display: block;
+  }
+
+  /* ── Risk toggle ── */
+  .risk-toggle {
+    display: flex;
+    gap: 0;
+    border: 1px solid var(--rule);
+    border-radius: var(--radius);
+    overflow: hidden;
+    width: fit-content;
+  }
+
+  .risk-btn {
+    padding: .55rem 1.2rem;
+    background: var(--card);
+    border: none;
+    border-right: 1px solid var(--rule);
+    font-family: 'IBM Plex Sans', sans-serif;
+    font-size: .82rem;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all .15s;
+    color: var(--ink2);
+  }
+
+  .risk-btn:last-child { border-right: none; }
+  .risk-btn:hover { background: var(--bg2); }
+  .risk-btn.active { background: var(--gold); color: var(--ink); border-color: var(--gold); }
+
+  /* ── Setup footer ── */
+  .setup-footer {
+    margin-top: 2rem;
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    flex-wrap: wrap;
+  }
+
+  .validation-msg {
+    font-size: .82rem;
+    color: var(--red);
+    display: none;
+  }
+
+  /* ── RESULTS SCREEN ── */
+  #screen-results {
+    flex-direction: column;
+  }
+
+  .results-body {
+    flex: 1;
+    padding: 2rem 1.5rem 4rem;
+    max-width: 960px;
+    width: 100%;
+    margin: 0 auto;
+  }
+
+  /* ── Progress bar ── */
+  .progress-wrap {
+    margin-bottom: 2rem;
+  }
+
+  .progress-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    margin-bottom: .5rem;
+  }
+
+  .progress-title { font-size: .8rem; font-weight: 500; color: var(--ink3); letter-spacing: .1em; text-transform: uppercase; }
+  .progress-count { font-family: 'IBM Plex Mono', monospace; font-size: .8rem; color: var(--gold); }
+
+  .progress-bar-track {
+    height: 3px;
+    background: var(--rule);
+    border-radius: 2px;
+    overflow: hidden;
+  }
+
+  .progress-bar-fill {
+    height: 100%;
+    background: linear-gradient(90deg, var(--gold-dark), var(--gold));
+    border-radius: 2px;
+    transition: width .4s ease;
+    width: 0%;
+  }
+
+  /* ── Country Analysis Cards ── */
+  .cards-grid {
+    display: grid;
+    gap: 1.25rem;
+  }
+
+  .country-result-card {
+    background: var(--card);
+    border: 1px solid var(--rule);
+    border-radius: 6px;
+    overflow: hidden;
+    box-shadow: var(--shadow);
+  }
+
+  .card-header {
+    padding: 1.1rem 1.4rem;
+    border-bottom: 1px solid var(--bg2);
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    flex-wrap: wrap;
+  }
+
+  .card-flag { font-size: 1.8rem; line-height: 1; }
+
+  .card-title-group { flex: 1; }
+
+  .card-country-name { font-size: 1.05rem; font-weight: 600; font-family: 'Playfair Display', serif; }
+  .card-exchange { font-size: .72rem; color: var(--ink3); font-family: 'IBM Plex Mono', monospace; letter-spacing: .06em; }
+
+  .card-badges { display: flex; gap: .5rem; align-items: center; flex-wrap: wrap; }
+
+  .badge {
+    padding: .25rem .65rem;
+    border-radius: 2px;
+    font-size: .72rem;
+    font-weight: 600;
+    letter-spacing: .06em;
+    text-transform: uppercase;
+  }
+
+  .badge-bullish  { background: #e8f5ed; color: var(--green); }
+  .badge-bearish  { background: #fdecea; color: var(--red); }
+  .badge-neutral  { background: #e8edf5; color: var(--blue); }
+
+  .confidence-ring {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+  }
+
+  .card-alloc {
+    background: var(--bg);
+    padding: .3rem .65rem;
+    border-radius: 2px;
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: .78rem;
+    color: var(--ink2);
+    white-space: nowrap;
+  }
+
+  .card-body { padding: 1.25rem 1.4rem; }
+
+  .card-summary {
+    font-size: .9rem;
+    color: var(--ink2);
+    line-height: 1.65;
+    margin-bottom: 1rem;
+    padding-bottom: 1rem;
+    border-bottom: 1px solid var(--bg2);
+  }
+
+  .card-why-now {
+    font-size: .82rem;
+    color: var(--gold-dark);
+    background: #fdfbf0;
+    border-left: 3px solid var(--gold);
+    padding: .6rem .9rem;
+    margin-bottom: 1rem;
+    border-radius: 0 2px 2px 0;
+    line-height: 1.55;
+  }
+
+  .card-section-title {
+    font-size: .68rem;
+    letter-spacing: .15em;
+    text-transform: uppercase;
+    color: var(--ink3);
+    font-weight: 600;
+    margin-bottom: .6rem;
+  }
+
+  /* ── Sector bar chart ── */
+  .sector-bars { display: flex; flex-direction: column; gap: .45rem; margin-bottom: 1rem; }
+
+  .sector-bar-row {
+    display: grid;
+    grid-template-columns: 110px 1fr 34px;
+    column-gap: .6rem;
+    row-gap: .15rem;
+    align-items: center;
+  }
+
+  .sector-bar-name {
+    font-size: .75rem;
+    font-weight: 500;
+    color: var(--ink2);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  .sector-bar-track {
+    height: 5px;
+    background: var(--bg2);
+    border-radius: 3px;
+    overflow: hidden;
+  }
+
+  .sector-bar-fill {
+    height: 100%;
+    background: linear-gradient(to right, var(--gold-dark), var(--gold-light));
+    border-radius: 3px;
+    transition: width .6s ease;
+  }
+
+  .sector-bar-pct {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: .68rem;
+    color: var(--ink3);
+    text-align: right;
+  }
+
+  .sector-bar-reason {
+    grid-column: 2 / 4;
+    font-size: .68rem;
+    color: var(--ink3);
+    line-height: 1.4;
+  }
+
+  /* ── Dual currency ── */
+  .dual-currency {
+    color: var(--ink3);
+    font-size: .82em;
+    margin-left: .3em;
+  }
+
+  /* ── History panel ── */
+  .history-overlay {
+    display: none;
+    position: fixed;
+    inset: 0;
+    z-index: 200;
+    background: rgba(26,23,16,.55);
+    backdrop-filter: blur(3px);
+    justify-content: flex-end;
+  }
+
+  .history-overlay.open { display: flex; }
+
+  .history-panel {
+    background: var(--card);
+    border-left: 1px solid var(--rule);
+    width: 340px;
+    max-width: 95vw;
+    height: 100vh;
+    overflow-y: auto;
+    display: flex;
+    flex-direction: column;
+    box-shadow: var(--shadow-lg);
+  }
+
+  .history-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 1.1rem 1.25rem .8rem;
+    border-bottom: 1px solid var(--rule);
+    position: sticky;
+    top: 0;
+    background: var(--card);
+    z-index: 1;
+  }
+
+  .history-title {
+    font-family: 'Playfair Display', serif;
+    font-weight: 700;
+    font-size: 1rem;
+    color: var(--ink);
+  }
+
+  .history-close {
+    background: none;
+    border: none;
+    font-size: 1.4rem;
+    cursor: pointer;
+    color: var(--ink3);
+    padding: 0 .2rem;
+    line-height: 1;
+  }
+
+  .history-body {
+    padding: .9rem 1rem;
+    display: flex;
+    flex-direction: column;
+    gap: .45rem;
+    flex: 1;
+  }
+
+  .history-entry {
+    display: flex;
+    flex-direction: column;
+    gap: .2rem;
+    padding: .7rem .9rem;
+    border: 1px solid var(--rule);
+    border-radius: var(--radius);
+    cursor: pointer;
+    transition: border-color .15s, background .15s;
+  }
+
+  .history-entry:hover { border-color: var(--gold); background: rgba(201,168,76,.04); }
+
+  .history-entry-top {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: .5rem;
+  }
+
+  .history-entry-name { font-size: .88rem; font-weight: 500; color: var(--ink); }
+  .history-entry-meta { font-size: .7rem; color: var(--ink3); }
+  .history-empty { font-size: .85rem; color: var(--ink3); text-align: center; padding: 2.5rem 0; }
+
+  .companies-table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-bottom: 1rem;
+  }
+
+  .companies-table th {
+    text-align: left;
+    font-size: .65rem;
+    letter-spacing: .12em;
+    text-transform: uppercase;
+    color: var(--ink3);
+    padding: .4rem .5rem;
+    border-bottom: 1px solid var(--rule);
+    font-weight: 600;
+  }
+
+  .companies-table td {
+    padding: .55rem .5rem;
+    font-size: .82rem;
+    border-bottom: 1px solid var(--bg2);
+    vertical-align: top;
+  }
+
+  .companies-table tr:last-child td { border-bottom: none; }
+  .dca-table td:first-child { color: var(--ink3); font-size: .78rem; }
+  .dca-note { font-size: .73rem; color: var(--ink3); margin: .3rem 0 0; font-style: italic; }
+
+  .ticker-badge {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: .75rem;
+    font-weight: 500;
+    background: var(--bg);
+    padding: .15rem .4rem;
+    border-radius: 2px;
+    color: var(--ink2);
+    white-space: nowrap;
+  }
+
+  .conviction-high   { color: var(--green); font-weight: 600; font-size: .75rem; }
+  .conviction-medium { color: var(--gold-dark); font-weight: 500; font-size: .75rem; }
+  .conviction-low    { color: var(--ink3); font-size: .75rem; }
+
+  .company-invest {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: .78rem;
+    font-weight: 600;
+    color: var(--gold-dark);
+    white-space: nowrap;
+  }
+
+  .company-return {
+    font-size: .75rem;
+    color: var(--green);
+    font-weight: 600;
+    white-space: nowrap;
+  }
+
+  .valuation-ctx {
+    font-size: .7rem;
+    color: var(--ink3);
+    margin-top: .15rem;
+    line-height: 1.4;
+  }
+
+  .catalyst-list {
+    list-style: none;
+    margin-top: .25rem;
+  }
+
+  .catalyst-list li {
+    font-size: .68rem;
+    color: var(--blue);
+    padding: .1rem 0;
+    display: flex;
+    gap: .3rem;
+  }
+
+  .catalyst-list li::before { content: '▸'; opacity: .6; flex-shrink: 0; }
+
+  .dividend-badge {
+    display: inline-block;
+    font-size: .65rem;
+    font-weight: 600;
+    padding: .1rem .35rem;
+    border-radius: 2px;
+    background: rgba(201,168,76,.15);
+    color: var(--gold-dark);
+    white-space: nowrap;
+    vertical-align: middle;
+    margin-left: .3rem;
+  }
+
+  /* ── Bear / Base / Bull scenarios ── */
+  .scenario-row {
+    display: flex;
+    align-items: flex-end;
+    gap: .5rem;
+    margin-bottom: .5rem;
+  }
+
+  .scenario-label {
+    font-size: .68rem;
+    font-weight: 600;
+    letter-spacing: .06em;
+    width: 44px;
+    flex-shrink: 0;
+    padding-bottom: .25rem;
+  }
+
+  .scenario-label.bear { color: var(--red); }
+  .scenario-label.base { color: var(--gold-dark); }
+  .scenario-label.bull { color: var(--green); }
+
+  .scenario-result {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: .7rem;
+    color: var(--ink3);
+    white-space: nowrap;
+    padding-bottom: .25rem;
+    flex-shrink: 0;
+  }
+
+  .scenario-bars-wrap { flex: 1; }
+
+  .scenario-bars-wrap .forecast-bar { opacity: .85; }
+  .scenario-bars-wrap.bear .forecast-bar { background: linear-gradient(to top, #8b1a1a, #c0392b); }
+  .scenario-bars-wrap.base .forecast-bar { background: linear-gradient(to top, var(--gold-dark), var(--gold-light)); }
+  .scenario-bars-wrap.bull .forecast-bar { background: linear-gradient(to top, #1a5c38, #2e7d52); }
+
+  /* ── Currency risk ── */
+  .currency-risk-badge {
+    font-size: .65rem;
+    font-weight: 600;
+    padding: .2rem .5rem;
+    border-radius: 2px;
+    background: rgba(255,200,0,.15);
+    color: #8a6800;
+    border: 1px solid rgba(255,200,0,.3);
+    white-space: nowrap;
+  }
+
+  .currency-risk-note {
+    font-size: .78rem;
+    color: #7a6000;
+    background: rgba(255,200,0,.08);
+    border-left: 3px solid rgba(255,200,0,.5);
+    padding: .5rem .8rem;
+    border-radius: 0 2px 2px 0;
+    margin-bottom: .9rem;
+    line-height: 1.5;
+  }
+
+  /* ── Forecast bar chart ── */
+  .forecast-meta {
+    font-size: .82rem;
+    color: var(--ink2);
+    margin-bottom: .7rem;
+  }
+
+  .forecast-meta .gain-positive { color: var(--green); font-weight: 600; }
+  .forecast-meta .gain-negative { color: var(--red);   font-weight: 600; }
+
+  .forecast-bars {
+    display: flex;
+    align-items: flex-end;
+    gap: .3rem;
+    margin-bottom: 1rem;
+  }
+
+  .forecast-bar-wrap {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: .15rem;
+  }
+
+  .forecast-bar {
+    width: 100%;
+    background: linear-gradient(to top, var(--gold-dark), var(--gold-light));
+    border-radius: 2px 2px 0 0;
+  }
+
+  .forecast-bar-label {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: .6rem;
+    color: var(--ink3);
+  }
+
+  .forecast-bar-val {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: .58rem;
+    color: var(--ink2);
+    white-space: nowrap;
+  }
+
+  /* ── Portfolio combined forecast ── */
+  .pf-forecast {
+    margin-top: 1.5rem;
+    padding-top: 1.5rem;
+    border-top: 1px solid rgba(255,253,248,.12);
+  }
+
+  .pf-forecast-title {
+    font-size: .7rem;
+    letter-spacing: .15em;
+    text-transform: uppercase;
+    color: rgba(255,253,248,.45);
+    margin-bottom: .8rem;
+    font-weight: 500;
+  }
+
+  .pf-forecast-summary {
+    font-size: .9rem;
+    color: rgba(255,253,248,.85);
+    margin-bottom: 1rem;
+  }
+
+  .pf-forecast-summary strong { color: var(--gold); }
+
+  .pf-forecast-bars .forecast-bar {
+    background: linear-gradient(to top, rgba(201,168,76,.4), rgba(232,201,110,.7));
+  }
+
+  .pf-forecast-bars .forecast-bar-label,
+  .pf-forecast-bars .forecast-bar-val { color: rgba(255,253,248,.55); }
+
+  .disclaimer {
+    text-align: center;
+    font-size: .7rem;
+    color: var(--ink3);
+    padding: 1.5rem 0 .5rem;
+    line-height: 1.6;
+  }
+
+  .rate-badge {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: .72rem;
+    color: rgba(255,253,248,.4);
+  }
+
+  .optimising-state {
+    background: var(--ink);
+    border-radius: 8px;
+    padding: 1.5rem 2rem;
+    color: rgba(255,253,248,.6);
+    font-size: .85rem;
+    display: flex;
+    align-items: center;
+    gap: .75rem;
+    margin-top: 2rem;
+  }
+
+  @keyframes spin { to { transform: rotate(360deg); } }
+  .spinner {
+    width: 16px; height: 16px;
+    border: 2px solid rgba(201,168,76,.3);
+    border-top-color: var(--gold);
+    border-radius: 50%;
+    animation: spin .8s linear infinite;
+    flex-shrink: 0;
+  }
+
+  .opt-note {
+    font-size: .82rem;
+    color: rgba(255,253,248,.6);
+    background: rgba(255,253,248,.06);
+    border-left: 3px solid var(--gold);
+    padding: .6rem .9rem;
+    margin-bottom: 1.25rem;
+    border-radius: 0 2px 2px 0;
+    line-height: 1.55;
+  }
+
+  .legend-rationale {
+    font-size: .7rem;
+    color: rgba(255,253,248,.38);
+    line-height: 1.4;
+    margin-top: .1rem;
+    flex-basis: 100%;
+    padding-left: 1.6rem;
+  }
+
+  .risks-list {
+    list-style: none;
+  }
+
+  .risks-list li {
+    padding: .3rem 0;
+    font-size: .82rem;
+    color: var(--ink2);
+    display: flex;
+    gap: .5rem;
+    align-items: flex-start;
+  }
+
+  .risks-list li::before {
+    content: '▸';
+    color: var(--red);
+    font-size: .7rem;
+    margin-top: .2rem;
+    flex-shrink: 0;
+  }
+
+  .card-collapse-btn {
+    background: none;
+    border: none;
+    cursor: pointer;
+    color: var(--ink3);
+    font-size: 1rem;
+    line-height: 1;
+    padding: .25rem .4rem;
+    border-radius: 2px;
+    transition: transform .22s ease, color .15s;
+    flex-shrink: 0;
+    margin-left: auto;
+  }
+  .card-collapse-btn:hover { color: var(--ink); background: var(--bg2); }
+  .country-result-card.collapsed .card-collapse-btn { transform: rotate(-90deg); }
+  .country-result-card.collapsed .card-body,
+  .country-result-card.collapsed .card-footer { display: none; }
+
+  .card-footer {
+    padding: .8rem 1.4rem;
+    background: var(--bg);
+    border-top: 1px solid var(--rule);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: .5rem;
+  }
+
+  .entry-strategy { font-size: .8rem; color: var(--ink2); }
+  .entry-strategy strong { color: var(--gold-dark); }
+  .refresh-card-btn {
+    display: inline-flex; align-items: center; gap: .25rem;
+    padding: .25rem .65rem; border-radius: 6px; border: 1px solid var(--border);
+    background: none; color: var(--ink3); font-size: .73rem; cursor: pointer;
+    margin-left: auto;
+  }
+  .refresh-card-btn:hover { color: var(--accent); border-color: var(--accent); }
+
+  .cache-pill {
+    font-size: .68rem;
+    letter-spacing: .08em;
+    text-transform: uppercase;
+    padding: .2rem .55rem;
+    border-radius: 2px;
+    font-weight: 600;
+  }
+
+  .cache-live   { background: #e8f5ed; color: var(--green); }
+  .cache-cached { background: var(--bg2); color: var(--ink3); }
+
+  /* ── Loading skeleton ── */
+  .card-loading {
+    padding: 1.5rem 1.4rem;
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+  }
+
+  .skeleton {
+    background: linear-gradient(90deg, var(--bg2) 25%, var(--rule) 50%, var(--bg2) 75%);
+    background-size: 200% 100%;
+    animation: shimmer 1.5s infinite;
+    border-radius: 3px;
+  }
+
+  @keyframes shimmer {
+    0%   { background-position: 200% 0; }
+    100% { background-position: -200% 0; }
+  }
+
+  .skeleton-flag  { width: 36px; height: 36px; border-radius: 4px; flex-shrink: 0; }
+  .skeleton-lines { flex: 1; }
+  .skeleton-line  { height: 12px; margin-bottom: 8px; }
+  .skeleton-line:last-child { width: 60%; }
+
+  /* ── Error card ── */
+  .card-error {
+    padding: 1.25rem 1.4rem;
+    display: flex;
+    align-items: center;
+    gap: .9rem;
+  }
+
+  .error-icon { font-size: 1.4rem; flex-shrink: 0; }
+
+  .error-text h4 { font-size: .9rem; color: var(--red); margin-bottom: .2rem; }
+  .error-text p  { font-size: .8rem; color: var(--ink3); margin-bottom: .5rem; }
+  .retry-btn {
+    display: inline-flex; align-items: center; gap: .3rem;
+    padding: .3rem .8rem; border-radius: 6px; border: 1px solid var(--border);
+    background: var(--bg2); color: var(--ink2); font-size: .78rem; cursor: pointer;
+  }
+  .retry-btn:hover { background: var(--accent); color: #fff; border-color: var(--accent); }
+
+  /* ── PORTFOLIO SUMMARY ── */
+  .portfolio-summary {
+    margin-top: 2.5rem;
+    background: var(--ink);
+    border-radius: 8px;
+    padding: 2rem;
+    color: #fffdf8;
+  }
+
+  .portfolio-summary h2 {
+    font-size: 1.3rem;
+    color: var(--gold);
+    margin-bottom: .3rem;
+  }
+
+  .portfolio-subtitle {
+    font-size: .8rem;
+    color: rgba(255,253,248,.45);
+    margin-bottom: 1.75rem;
+  }
+
+  .portfolio-layout {
+    display: grid;
+    grid-template-columns: 200px 1fr;
+    gap: 2rem;
+    align-items: start;
+  }
+
+  .donut-wrap {
+    position: relative;
+    width: 180px;
+    height: 180px;
+  }
+
+  .donut-wrap svg { overflow: visible; }
+
+  .donut-center {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+  }
+
+  .donut-amount {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 1rem;
+    font-weight: 500;
+    color: var(--gold);
+    line-height: 1;
+  }
+
+  .donut-label {
+    font-size: .62rem;
+    letter-spacing: .1em;
+    text-transform: uppercase;
+    color: rgba(255,253,248,.4);
+    margin-top: .3rem;
+  }
+
+  .portfolio-legend {
+    display: flex;
+    flex-direction: column;
+    gap: .6rem;
+  }
+
+  .legend-item {
+    display: flex;
+    align-items: center;
+    gap: .75rem;
+  }
+
+  .legend-dot {
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+    flex-shrink: 0;
+  }
+
+  .legend-country { font-size: .85rem; color: rgba(255,253,248,.85); flex: 1; }
+  .legend-pct { font-family: 'IBM Plex Mono', monospace; font-size: .82rem; color: var(--gold); }
+  .legend-amt { font-family: 'IBM Plex Mono', monospace; font-size: .78rem; color: rgba(255,253,248,.45); }
+
+  /* ── Toast ── */
+  .toast {
+    position: fixed;
+    bottom: 1.5rem;
+    right: 1.5rem;
+    background: var(--ink);
+    border: 1px solid rgba(201,168,76,.3);
+    color: #fffdf8;
+    padding: .75rem 1.25rem;
+    border-radius: 4px;
+    font-size: .82rem;
+    z-index: 9999;
+    opacity: 0;
+    transform: translateY(8px);
+    transition: all .25s;
+    pointer-events: none;
+    max-width: 320px;
+  }
+
+  .toast.show { opacity: 1; transform: translateY(0); }
+
+  /* ── Divider ── */
+  .divider {
+    border: none;
+    border-top: 1px solid var(--rule);
+    margin: 1.5rem 0;
+  }
+
+  /* ── Responsive ── */
+  .header-actions { display: flex; gap: .75rem; align-items: center; }
+
+  @media (max-width: 640px) {
+    h1 { font-size: 1.8rem; }
+    .form-row-2, .form-row-3 { grid-template-columns: 1fr; }
+    .portfolio-layout { grid-template-columns: 1fr; }
+    .donut-wrap { margin: 0 auto; }
+    .app-header { padding: .8rem 1rem; }
+    .setup-body, .results-body { padding: 1.5rem 1rem 3rem; }
+    .card-header { gap: .6rem; }
+
+    /* Results header: hide overflow buttons */
+    .header-actions { gap: .4rem; }
+    .header-hide-mobile { display: none !important; }
+    #rate-badge { display: none !important; }
+    #back-btn { font-size: .72rem !important; padding: .35rem .65rem !important; }
+
+    /* Card footer: stack into 2 rows */
+    .card-footer { flex-direction: column; align-items: flex-start; gap: .4rem; padding: .75rem 1rem; }
+    .card-footer-actions { display: flex; gap: .5rem; }
+
+    /* Companies table → stacked label-value rows */
+    .companies-table:not(.dca-table) thead { display: none; }
+    .companies-table:not(.dca-table) tr {
+      display: block;
+      border: 1px solid var(--rule);
+      border-radius: var(--radius);
+      margin-bottom: .75rem;
+      padding: .5rem .75rem;
+    }
+    .companies-table:not(.dca-table) td {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      gap: .5rem;
+      padding: .35rem 0;
+      border-bottom: 1px solid var(--bg2);
+      font-size: .82rem;
+    }
+    .companies-table:not(.dca-table) tr td:last-child { border-bottom: none; }
+    .companies-table:not(.dca-table) td::before {
+      content: attr(data-label);
+      font-size: .63rem;
+      font-weight: 600;
+      letter-spacing: .1em;
+      text-transform: uppercase;
+      color: var(--ink3);
+      flex-shrink: 0;
+      width: 70px;
+      padding-top: .1rem;
+    }
+  }
+
+  /* ── Country search ── */
+  .country-search {
+    width: 100%;
+    padding: .5rem .8rem;
+    background: var(--card);
+    border: 1px solid var(--rule);
+    border-radius: var(--radius);
+    font-family: 'IBM Plex Sans', sans-serif;
+    font-size: .85rem;
+    color: var(--ink);
+    margin-bottom: .75rem;
+    outline: none;
+    transition: border-color .15s;
+  }
+  .country-search:focus { border-color: var(--gold); }
+  .country-search::placeholder { color: var(--ink3); }
+
+  /* ── Outlook stripes ── */
+  .country-result-card.outlook-bullish { border-left: 3px solid var(--green); }
+  .country-result-card.outlook-bearish { border-left: 3px solid var(--red); }
+  .country-result-card.outlook-neutral { border-left: 3px solid var(--blue); }
+
+  /* ── Copy button ── */
+  .copy-card-btn {
+    display: inline-flex; align-items: center; gap: .25rem;
+    padding: .25rem .65rem; border-radius: 6px; border: 1px solid var(--rule);
+    background: none; color: var(--ink3); font-size: .73rem; cursor: pointer;
+  }
+  .copy-card-btn:hover { color: var(--gold-dark); border-color: var(--gold); }
+
+  /* ── Market comparison table ── */
+  .comparison-section { margin: 2rem 0 0; }
+  .comparison-section-title {
+    font-size: .68rem; letter-spacing: .15em; text-transform: uppercase;
+    color: var(--ink3); font-weight: 600; margin-bottom: .75rem;
+  }
+  #comparison-table-container { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+  .comparison-table {
+    width: 100%; border-collapse: collapse; font-size: .82rem;
+    background: var(--card); border: 1px solid var(--rule); border-radius: 6px;
+    overflow: hidden; box-shadow: var(--shadow);
+  }
+  .comparison-table th {
+    text-align: left; font-size: .65rem; letter-spacing: .12em;
+    text-transform: uppercase; color: var(--ink3); padding: .6rem .75rem;
+    border-bottom: 2px solid var(--rule); font-weight: 600; background: var(--bg2);
+  }
+  .comparison-table td { padding: .55rem .75rem; border-bottom: 1px solid var(--bg2); vertical-align: middle; }
+  .comparison-table tr:last-child td { border-bottom: none; }
+  .ct-country { font-weight: 500; }
+  .ct-return  { font-family: 'IBM Plex Mono', monospace; color: var(--green); font-weight: 500; }
+  .ct-scenarios { font-family: 'IBM Plex Mono', monospace; font-size: .75rem; color: var(--ink3); }
+  .ct-conf { font-family: 'IBM Plex Mono', monospace; font-size: .85rem; color: var(--gold); }
+
+  /* ── Print ── */
+  @media print {
+    .app-header, .progress-wrap, .card-footer, .rate-badge,
+    .card-collapse-btn, .copy-card-btn, #comparison-table-container { display: none !important; }
+    .country-result-card.collapsed .card-body { display: block !important; }
+    body { background: white !important; }
+    .results-body { padding: 0 !important; max-width: 100% !important; }
+    .country-result-card { break-inside: avoid; box-shadow: none !important; border: 1px solid #ccc !important; margin-bottom: 1rem; }
+    .country-result-card.outlook-bullish { border-left: 3px solid #2e7d52 !important; }
+    .country-result-card.outlook-bearish { border-left: 3px solid #c0392b !important; }
+    .country-result-card.outlook-neutral { border-left: 3px solid #1a4a7a !important; }
+    .portfolio-summary { background: #1a1710 !important; color: #fffdf8 !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+  /* ── Dark mode ── */
+  [data-theme="dark"] {
+    --bg:        #111009;
+    --bg2:       #1c1a13;
+    --card:      #201e16;
+    --ink:       #e8e4d8;
+    --ink2:      #b5af9a;
+    --ink3:      #6e6855;
+    --rule:      #2e2c21;
+    --shadow:    0 2px 16px rgba(0,0,0,.5);
+    --shadow-lg: 0 8px 40px rgba(0,0,0,.7);
+  }
+  /* Elements that hardcode var(--ink) as a dark surface — keep them dark in dark mode */
+  [data-theme="dark"] .app-header         { background: #0d0c09; }
+  [data-theme="dark"] #screen-login       { background: #0d0c09; }
+  [data-theme="dark"] .portfolio-summary  { background: #0d0c09; }
+  [data-theme="dark"] .optimising-state   { background: #0d0c09; }
+  /* Badge soft backgrounds — too light in dark mode */
+  [data-theme="dark"] .badge-bullish  { background: rgba(46,125,82,.22); }
+  [data-theme="dark"] .badge-bearish  { background: rgba(192,57,43,.22); }
+  [data-theme="dark"] .badge-neutral  { background: rgba(26,74,122,.22); }
+  [data-theme="dark"] .cache-live     { background: rgba(46,125,82,.18); }
+  [data-theme="dark"] .card-why-now   { background: rgba(201,168,76,.07); color: var(--gold-light); }
+  [data-theme="dark"] .country-card.selected { background: rgba(201,168,76,.1); border-color: rgba(201,168,76,.5); box-shadow: 0 0 0 2px rgba(201,168,76,.1); }
+  [data-theme="dark"] .country-search { background: var(--card); color: var(--ink); }
+  [data-theme="dark"] select,
+  [data-theme="dark"] input[type="number"],
+  [data-theme="dark"] input[type="text"] { color-scheme: dark; background: var(--card); color: var(--ink); border-color: var(--rule); }
+
+  /* ── Muted button (light-bg surfaces) ── */
+  .btn-muted {
+    background: none;
+    border: 1px solid var(--rule);
+    color: var(--ink3);
+    font-size: .8rem;
+    padding: .45rem .85rem;
+    border-radius: var(--radius);
+    cursor: pointer;
+    font-family: 'IBM Plex Sans', sans-serif;
+    transition: all .15s;
+  }
+  .btn-muted:hover { border-color: var(--gold); color: var(--gold-dark); }
+
+  /* ── Theme toggle ── */
+  .theme-toggle { font-size: .9rem; padding: .35rem .6rem !important; }
+
+  /* ── Card fade-in ── */
+  @keyframes fadeSlideIn {
+    from { opacity: 0; transform: translateY(10px); }
+    to   { opacity: 1; transform: translateY(0); }
+  }
+  .card-appeared { animation: fadeSlideIn .3s ease forwards; }
+
+</style>
+</head>
+<body>
+
+<!-- ══════════════ LOGIN ══════════════ -->
+<section id="screen-login" class="screen">
+  <div class="login-box">
+    <div class="login-logo">MERIDIAN</div>
+    <div class="login-tagline">Global Investment Intelligence</div>
+    <form id="login-form" autocomplete="off">
+      <label for="pw-input">Access Code</label>
+      <input type="password" id="pw-input" placeholder="Enter your access code" autofocus>
+      <div class="login-error" id="login-error"></div>
+      <button type="submit" class="btn btn-gold btn-full" id="login-btn">Enter</button>
+    </form>
+  </div>
+</section>
+
+<!-- ══════════════ SETUP ══════════════ -->
+<section id="screen-setup" class="screen">
+  <header class="app-header">
+    <div class="app-logo">MERIDIAN<span>Global Investment Intelligence</span></div>
+    <div style="display:flex;gap:.5rem;align-items:center;">
+      <button class="btn btn-ghost theme-toggle" id="theme-toggle-setup" onclick="toggleTheme()" title="Toggle dark mode">☾</button>
+      <button class="btn btn-ghost" id="logout-btn-setup">Sign Out</button>
+    </div>
+  </header>
+  <div class="setup-body">
+    <h2 class="setup-title">Portfolio Setup</h2>
+    <p class="setup-subtitle">Configure your investment parameters and select markets to analyse.</p>
+
+    <div class="form-row form-row-2">
+      <div class="field">
+        <label for="amount-input">Investment Amount</label>
+        <input type="number" id="amount-input" placeholder="10000" min="1" step="1">
+      </div>
+      <div class="field">
+        <label for="currency-select">Currency</label>
+        <div class="select-wrap">
+          <select id="currency-select"></select>
+        </div>
+      </div>
+    </div>
+
+    <div class="form-row" style="margin-bottom:1.75rem">
+      <div>
+        <div class="field-label">Investment Horizon</div>
+        <div class="horizon-pills" id="horizon-pills"></div>
+      </div>
+    </div>
+
+    <div class="form-row" style="margin-bottom:1.75rem">
+      <div>
+        <div class="field-label">Risk Profile</div>
+        <div class="risk-toggle" id="risk-toggle"></div>
+      </div>
+    </div>
+
+    <div class="section-label">
+      Markets
+      <div class="section-label-actions">
+        <span class="link-sm" id="history-btn">History</span>
+        <span class="link-sm" id="select-all-btn">Select All</span>
+        <span class="link-sm" id="clear-all-btn">Clear</span>
+      </div>
+    </div>
+    <input type="text" class="country-search" id="country-search" placeholder="Search markets…" autocomplete="off">
+    <div class="country-grid" id="country-grid"></div>
+
+    <hr class="divider">
+    <div class="setup-footer">
+      <button class="btn btn-gold" id="analyse-btn">Analyse Markets →</button>
+      <button class="btn-muted" onclick="copyShareURL()" title="Copy a shareable link to this exact setup">⎘ Share Setup</button>
+      <span class="validation-msg" id="validation-msg">Please select at least one market.</span>
+    </div>
+  </div>
+</section>
+
+<!-- ══════════════ RESULTS ══════════════ -->
+<section id="screen-results" class="screen">
+  <header class="app-header">
+    <div class="app-logo">MERIDIAN<span>Global Investment Intelligence</span></div>
+    <div class="header-actions">
+      <span class="rate-badge" id="rate-badge"></span>
+      <button class="btn btn-ghost theme-toggle" onclick="toggleTheme()" title="Toggle dark mode">☾</button>
+      <button class="btn btn-outline header-hide-mobile" onclick="exportAllCSV()" style="font-size:.78rem;padding:.45rem .9rem;" title="Export all companies to CSV">⬇ CSV</button>
+      <button class="btn btn-outline header-hide-mobile" onclick="window.print()" style="font-size:.78rem;padding:.45rem .9rem;" title="Print or save as PDF">⎙ Print</button>
+      <button class="btn btn-outline" id="back-btn" style="font-size:.78rem;padding:.45rem .9rem;">← New Analysis</button>
+      <button class="btn btn-ghost" id="logout-btn-results">Sign Out</button>
+    </div>
+  </header>
+  <div class="results-body">
+    <div class="progress-wrap" id="progress-wrap">
+      <div class="progress-header">
+        <span class="progress-title" id="progress-title">Analysing Markets</span>
+        <span class="progress-count" id="progress-count">0 / 0</span>
+      </div>
+      <div class="progress-bar-track">
+        <div class="progress-bar-fill" id="progress-bar"></div>
+      </div>
+    </div>
+    <div class="cards-grid" id="cards-grid"></div>
+    <div id="comparison-table-container"></div>
+    <div id="portfolio-summary-container"></div>
+    <p class="disclaimer">AI-generated analysis for educational purposes only. Not financial advice.<br>Past performance does not guarantee future results. Always consult a qualified financial adviser.</p>
+  </div>
+</section>
+
+<!-- ══════════════ TOAST ══════════════ -->
+<div class="toast" id="toast"></div>
+
+<script>
+// ── Config ──────────────────────────────────────────────
+const API_BASE = (() => {
+  const h = location.hostname;
+  if (h === 'localhost' || h === '127.0.0.1') return 'http://localhost:3000';
+  return `http://${h}:3000`;
+})();
+
+const CACHE_TTL = 7 * 24 * 60 * 60 * 1000;
+
+const COUNTRIES = [
+  { code: 'US',      name: 'United States', flag: '🇺🇸', exchange: 'NYSE / NASDAQ' },
+  { code: 'UK',      name: 'United Kingdom', flag: '🇬🇧', exchange: 'LSE' },
+  { code: 'India',   name: 'India',          flag: '🇮🇳', exchange: 'NSE / BSE' },
+  { code: 'Germany', name: 'Germany',        flag: '🇩🇪', exchange: 'Xetra / FSE' },
+  { code: 'Japan',   name: 'Japan',          flag: '🇯🇵', exchange: 'TSE' },
+  { code: 'France',  name: 'France',         flag: '🇫🇷', exchange: 'Euronext Paris' },
+  { code: 'China',       name: 'China',        flag: '🇨🇳', exchange: 'SSE / SZSE' },
+  { code: 'Australia',   name: 'Australia',    flag: '🇦🇺', exchange: 'ASX' },
+  { code: 'Canada',      name: 'Canada',       flag: '🇨🇦', exchange: 'TSX / CSE' },
+  { code: 'SouthKorea',  name: 'South Korea',  flag: '🇰🇷', exchange: 'KRX / KOSPI' },
+  { code: 'Singapore',   name: 'Singapore',    flag: '🇸🇬', exchange: 'SGX' },
+  { code: 'Brazil',      name: 'Brazil',       flag: '🇧🇷', exchange: 'B3 (Bovespa)' },
+  { code: 'Switzerland', name: 'Switzerland',  flag: '🇨🇭', exchange: 'SIX' },
+];
+
+const HORIZONS = [
+  { value: '6m',  label: '6 Months' },
+  { value: '1y',  label: '1 Year' },
+  { value: '2y',  label: '2 Years' },
+  { value: '3y',  label: '3 Years' },
+  { value: '4y',  label: '4 Years' },
+  { value: '5y',  label: '5 Years' },
+  { value: '10y', label: '10 Years' },
+];
+
+const CURRENCIES = [
+  { code: 'USD', symbol: '$',  label: 'USD — US Dollar' },
+  { code: 'GBP', symbol: '£',  label: 'GBP — British Pound' },
+  { code: 'EUR', symbol: '€',  label: 'EUR — Euro' },
+  { code: 'INR', symbol: '₹',  label: 'INR — Indian Rupee' },
+  { code: 'JPY', symbol: '¥',  label: 'JPY — Japanese Yen' },
+];
+
+const RISK_PROFILES = ['Conservative', 'Balanced', 'Aggressive'];
+
+const CHART_COLORS = ['#c9a84c','#e8c96e','#a07828','#f0d8a0','#7a5c1c','#d4b060','#eed090'];
+
+const CURRENCY_SYMBOLS = { USD:'$', GBP:'£', EUR:'€', INR:'₹', JPY:'¥', CNY:'¥', AUD:'A$', CAD:'C$', KRW:'₩', SGD:'S$', BRL:'R$', CHF:'Fr' };
+
+const LOCAL_CURRENCY = { US:'USD', UK:'GBP', India:'INR', Germany:'EUR', France:'EUR', Japan:'JPY', China:'CNY', Australia:'AUD', Canada:'CAD', SouthKorea:'KRW', Singapore:'SGD', Brazil:'BRL', Switzerland:'CHF' };
+
+// ── State ───────────────────────────────────────────────
+const state = {
+  token:             null,
+  amount:            10000,
+  currency:          'USD',
+  horizon:           '1y',
+  riskProfile:       'Balanced',
+  selectedCountries: [],
+  results:           {},
+  lastOptimizedData: null,
+  fxRates:           null,
+  fxRatesAt:         null,
+};
+
+// ── Init ────────────────────────────────────────────────
+function init() {
+  applyTheme();
+  loadSetupState();
+  loadFromURL();
+  state.token = sessionStorage.getItem('meridian_token');
+  if (state.token) {
+    buildSetupScreen();
+    showScreen('setup');
+  } else {
+    showScreen('login');
+  }
+
+  document.getElementById('login-form').addEventListener('submit', handleLogin);
+  document.getElementById('logout-btn-setup').addEventListener('click', handleLogout);
+  document.getElementById('logout-btn-results').addEventListener('click', handleLogout);
+  document.getElementById('back-btn').addEventListener('click', () => showScreen('setup'));
+  document.getElementById('analyse-btn').addEventListener('click', validateAndAnalyse);
+  document.getElementById('history-btn').addEventListener('click', openHistory);
+  document.getElementById('select-all-btn').addEventListener('click', selectAll);
+  document.getElementById('clear-all-btn').addEventListener('click', clearAll);
+
+  // Enter key triggers analysis from the setup screen (skip if focused on search/amount input)
+  document.addEventListener('keydown', e => {
+    if (e.key === 'Enter' && document.getElementById('screen-setup').classList.contains('active')) {
+      const tag = document.activeElement.tagName;
+      if (tag !== 'INPUT' && tag !== 'SELECT' && tag !== 'BUTTON') validateAndAnalyse();
+    }
+  });
+
+  // Register service worker for PWA install prompt
+  if ('serviceWorker' in navigator) {
+    navigator.serviceWorker.register('/sw.js').catch(() => {});
+  }
+}
+
+// ── Login ───────────────────────────────────────────────
+async function handleLogin(e) {
+  e.preventDefault();
+  const pw  = document.getElementById('pw-input').value.trim();
+  const btn = document.getElementById('login-btn');
+  const err = document.getElementById('login-error');
+
+  if (!pw) return;
+  btn.disabled = true;
+  btn.textContent = 'Verifying…';
+  err.style.display = 'none';
+
+  try {
+    const res  = await fetch(`${API_BASE}/login`, {
+      method:  'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body:    JSON.stringify({ password: pw }),
+    });
+    const data = await res.json();
+    if (!res.ok || !data.success) throw new Error(data.error || 'Incorrect password');
+    state.token = data.token;
+    sessionStorage.setItem('meridian_token', data.token);
+    buildSetupScreen();
+    showScreen('setup');
+  } catch (ex) {
+    err.textContent  = ex.message;
+    err.style.display = 'block';
+  } finally {
+    btn.disabled = false;
+    btn.textContent = 'Enter';
+  }
+}
+
+function handleLogout() {
+  sessionStorage.removeItem('meridian_token');
+  state.token = null;
+  state.selectedCountries = [];
+  state.results = {};
+  document.getElementById('pw-input').value = '';
+  showScreen('login');
+}
+
+// ── Setup Screen ─────────────────────────────────────────
+function buildSetupScreen() {
+  document.title = 'MERIDIAN — Investment Intelligence';
+  // Currency dropdown
+  const currSel = document.getElementById('currency-select');
+  currSel.innerHTML = CURRENCIES.map(c =>
+    `<option value="${c.code}" ${c.code === state.currency ? 'selected' : ''}>${c.label}</option>`
+  ).join('');
+  currSel.addEventListener('change', () => { state.currency = currSel.value; saveSetupState(); });
+
+  // Amount input
+  const amtInput = document.getElementById('amount-input');
+  amtInput.value = state.amount;
+  amtInput.addEventListener('input', () => { state.amount = parseFloat(amtInput.value) || 0; saveSetupState(); });
+
+  // Horizon pills
+  const pillsEl = document.getElementById('horizon-pills');
+  pillsEl.innerHTML = HORIZONS.map(h =>
+    `<div class="horizon-pill ${h.value === state.horizon ? 'selected' : ''}" data-value="${h.value}">${h.label}</div>`
+  ).join('');
+  pillsEl.querySelectorAll('.horizon-pill').forEach(pill => {
+    pill.addEventListener('click', () => {
+      state.horizon = pill.dataset.value;
+      pillsEl.querySelectorAll('.horizon-pill').forEach(p => p.classList.remove('selected'));
+      pill.classList.add('selected');
+      saveSetupState();
+    });
+  });
+
+  // Risk toggle
+  const riskEl = document.getElementById('risk-toggle');
+  riskEl.innerHTML = RISK_PROFILES.map(r =>
+    `<button class="risk-btn ${r === state.riskProfile ? 'active' : ''}" data-value="${r}">${r}</button>`
+  ).join('');
+  riskEl.querySelectorAll('.risk-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      state.riskProfile = btn.dataset.value;
+      riskEl.querySelectorAll('.risk-btn').forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      saveSetupState();
+    });
+  });
+
+  // Country grid
+  const gridEl = document.getElementById('country-grid');
+  gridEl.innerHTML = COUNTRIES.map(c => `
+    <div class="country-card ${state.selectedCountries.includes(c.code) ? 'selected' : ''}" data-code="${c.code}">
+      <span class="flag">${c.flag}</span>
+      <div>
+        <div class="name">${c.name}</div>
+        <div class="exch">${c.exchange}</div>
+      </div>
+      <div class="check"></div>
+    </div>
+  `).join('');
+  gridEl.querySelectorAll('.country-card').forEach(card => {
+    card.addEventListener('click', () => toggleCountry(card.dataset.code, card));
+  });
+
+  // Country search filter
+  const searchEl = document.getElementById('country-search');
+  searchEl.value = '';
+  searchEl.addEventListener('input', () => {
+    const q = searchEl.value.toLowerCase().trim();
+    gridEl.querySelectorAll('.country-card').forEach(card => {
+      const name = (card.querySelector('.name')?.textContent || '').toLowerCase();
+      card.style.display = !q || name.includes(q) ? '' : 'none';
+    });
+  });
+}
+
+function toggleCountry(code, cardEl) {
+  const idx = state.selectedCountries.indexOf(code);
+  if (idx === -1) {
+    state.selectedCountries.push(code);
+    cardEl.classList.add('selected');
+  } else {
+    state.selectedCountries.splice(idx, 1);
+    cardEl.classList.remove('selected');
+  }
+  document.getElementById('validation-msg').style.display = 'none';
+  saveSetupState();
+}
+
+function selectAll() {
+  state.selectedCountries = COUNTRIES.map(c => c.code);
+  document.querySelectorAll('.country-card').forEach(c => c.classList.add('selected'));
+  saveSetupState();
+}
+
+function clearAll() {
+  state.selectedCountries = [];
+  document.querySelectorAll('.country-card').forEach(c => c.classList.remove('selected'));
+  saveSetupState();
+}
+
+function validateAndAnalyse() {
+  if (state.selectedCountries.length === 0) {
+    document.getElementById('validation-msg').style.display = 'inline';
+    return;
+  }
+  if (!state.amount || state.amount <= 0) {
+    showToast('Please enter a valid investment amount.');
+    return;
+  }
+  startAnalysis();
+}
+
+// ── Analysis + Results ───────────────────────────────────
+async function startAnalysis() {
+  setFavicon('loading');
+  state.results = {};
+  state.lastOptimizedData = null;
+  await fetchFXRates();
+  const cardsEl   = document.getElementById('cards-grid');
+  const summaryEl = document.getElementById('portfolio-summary-container');
+  cardsEl.innerHTML = '';
+  summaryEl.innerHTML = '';
+  document.getElementById('comparison-table-container').innerHTML = '';
+  document.getElementById('progress-wrap').style.display = 'block';
+  showScreen('results');
+
+  const countries = state.selectedCountries;
+  updateProgress(0, countries.length);
+  fetchStatus();
+
+  // Pre-render loading skeletons with country names
+  countries.forEach(code => {
+    const c = COUNTRIES.find(x => x.code === code);
+    cardsEl.insertAdjacentHTML('beforeend', `
+      <div class="country-result-card" id="card-${code}">
+        <div class="card-loading">
+          <span style="font-size:1.6rem;flex-shrink:0">${c?.flag || '🌍'}</span>
+          <div class="skeleton-lines" style="flex:1">
+            <div style="font-size:.85rem;font-weight:500;color:var(--ink2);margin-bottom:.5rem">Analysing ${c?.name || code}…</div>
+            <div class="skeleton skeleton-line" style="width:60%"></div>
+          </div>
+        </div>
+      </div>
+    `);
+  });
+
+  // Fetch all markets in parallel — each card renders as soon as its own fetch resolves
+  let done = 0;
+  const label = countries.length === 1
+    ? `${COUNTRIES.find(x => x.code === countries[0])?.name || countries[0]}…`
+    : `${countries.length} markets simultaneously…`;
+  updateProgress(0, countries.length, label);
+  await Promise.allSettled(countries.map(code =>
+    analyseCountry(code)
+      .then(data => { state.results[code] = data; renderCountryCard(code, data); })
+      .catch(err  => { renderErrorCard(code, err.message); })
+      .finally(()  => { done++; updateProgress(done, countries.length, null); })
+  ));
+
+  // Notify user if any results came from cache
+  const cacheHits = Object.values(state.results).filter(d => d?.fromCache).length;
+  if (cacheHits > 0) {
+    showToast(`${cacheHits} market${cacheHits > 1 ? 's' : ''} loaded from cache — up to 7 days old`);
+  }
+
+  // Show optimising spinner while we make the optimization call
+  if (state.selectedCountries.length > 1) {
+    document.getElementById('portfolio-summary-container').innerHTML = `
+      <div class="optimising-state">
+        <div class="spinner"></div>
+        Optimising allocation across markets…
+      </div>
+    `;
+  }
+  const optimizedData = await optimizePortfolio();
+  state.lastOptimizedData = optimizedData;
+  renderPortfolioSummary(optimizedData);
+  setFavicon('default');
+  fetchStatus();
+}
+
+async function analyseCountry(code) {
+  const cacheKey = `meridian_${code}_${state.horizon}_${state.riskProfile.toLowerCase()}`;
+  const cached   = getCache(cacheKey);
+  if (cached) return { ...cached, fromCache: true };
+
+  const controller = new AbortController();
+  const timer      = setTimeout(() => controller.abort(), 50000);
+
+  try {
+    const res = await fetch(`${API_BASE}/api/analyze`, {
+      method:  'POST',
+      headers: {
+        'Content-Type':  'application/json',
+        'Authorization': `Bearer ${state.token}`,
+      },
+      body:   JSON.stringify({ country: code, horizon: state.horizon, riskProfile: state.riskProfile.toLowerCase() }),
+      signal: controller.signal,
+    });
+    clearTimeout(timer);
+    const data = await res.json();
+    if (!res.ok || !data.success) throw new Error(data.error || `HTTP ${res.status}`);
+    if (!data.fromCache) setCache(cacheKey, data);
+    return data;
+  } catch (err) {
+    clearTimeout(timer);
+    if (err.name === 'AbortError') throw new Error('Request timed out after 90 seconds.');
+    throw err;
+  }
+}
+
+function buildInvestSection(code, d, countryAmt) {
+  const coList     = d.companies || [];
+  const coAllocSum = coList.reduce((s, co) => s + (co.allocationPct || 0), 0);
+  // Fallback: if Claude returned no allocationPct, split equally across companies
+  const normFactor = coAllocSum > 0 ? 100 / coAllocSum : 100 / Math.max(coList.length, 1);
+  const equalShare = coAllocSum === 0 ? 100 / Math.max(coList.length, 1) : 0;
+  const amtLabel   = formatDual(Math.round(countryAmt), state.currency, LOCAL_CURRENCY[code]);
+
+  const companiesHTML = coList.map(co => {
+    const cv       = (co.conviction || '').toLowerCase();
+    const cvCls    = cv === 'high' ? 'conviction-high' : cv === 'medium' ? 'conviction-medium' : 'conviction-low';
+    const coPct    = coAllocSum > 0 ? (co.allocationPct || 0) * normFactor : equalShare;
+    const coAmt    = formatDual(Math.round((coPct / 100) * countryAmt), state.currency, LOCAL_CURRENCY[code]);
+    const coRet    = co.expectedAnnualReturnPct ? `+${co.expectedAnnualReturnPct}%` : '–';
+    const divBadge = co.dividendYield > 0 ? `<span class="dividend-badge">${co.dividendYield}% div</span>` : '';
+    const valCtx   = co.valuationContext ? `<div class="valuation-ctx">${co.valuationContext}</div>` : '';
+    const cats     = (co.catalysts || []).length
+      ? `<ul class="catalyst-list">${co.catalysts.map(c => `<li>${c}</li>`).join('')}</ul>` : '';
+    return `<tr>
+      <td data-label="Ticker"><span class="ticker-badge">${co.ticker || '–'}</span> ${divBadge}<br><span style="font-size:.65rem;color:var(--ink3)">${co.exchange || ''}</span></td>
+      <td data-label="Company"><div>${co.name || '–'}</div>${valCtx}${cats}</td>
+      <td data-label="Invest" class="company-invest">${coAmt}</td>
+      <td data-label="Return" class="company-return">${coRet}</td>
+      <td data-label="Conviction" class="${cvCls}">${co.conviction || '–'}</td>
+      <td data-label="Thesis" style="font-size:.75rem;color:var(--ink3)">${co.reason || ''}</td>
+    </tr>`;
+  }).join('');
+
+  // Three-scenario forecast
+  const bearPct  = d.bearReturnPct  ?? d.baseReturnPct ?? (d.expectedAnnualReturnPct - 8) ?? 4;
+  const basePct  = d.baseReturnPct  ?? d.expectedAnnualReturnPct ?? 10;
+  const bullPct  = d.bullReturnPct  ?? (d.expectedAnnualReturnPct + 8) ?? 18;
+
+  function scenarioRow(label, cls, pct) {
+    const pts    = calcForecastPoints(countryAmt, pct, state.horizon);
+    const bars   = renderForecastBars(pts, countryAmt, `scenario-bars-wrap ${cls}`);
+    const endVal = pts.length ? pts[pts.length - 1].value : countryAmt;
+    const gain   = countryAmt > 0 ? ((endVal - countryAmt) / countryAmt * 100).toFixed(1) : '0';
+    const sign   = parseFloat(gain) >= 0 ? '+' : '';
+    return `<div class="scenario-row">
+      <div class="scenario-label ${cls}">${label}</div>
+      <div class="scenario-bars-wrap ${cls}" style="flex:1">${bars}</div>
+      <div class="scenario-result">${sign}${gain}% → ${formatAmount(Math.round(endVal), state.currency)}</div>
+    </div>`;
+  }
+
+  // DCA schedule — only when entryStrategy is Phased
+  const horizonMonths = { '6m':6, '1y':12, '2y':24, '3y':36, '4y':48, '5y':60, '10y':120 };
+  const totalMonths   = horizonMonths[state.horizon] || 12;
+  const dcaHTML = (d.entryStrategy || '').toLowerCase().includes('phased') && countryAmt > 0
+    ? (() => {
+        const monthly = countryAmt / totalMonths;
+        const rows = Array.from({ length: Math.min(totalMonths, 12) }, (_, i) => {
+          const cumulative = monthly * (i + 1);
+          return `<tr>
+            <td>Month ${i + 1}</td>
+            <td>${formatAmount(Math.round(monthly), state.currency)}</td>
+            <td>${formatAmount(Math.round(cumulative), state.currency)}</td>
+          </tr>`;
+        }).join('');
+        const note = totalMonths > 12
+          ? `<p class="dca-note">Showing first 12 of ${totalMonths} monthly payments</p>` : '';
+        return `
+          <div class="card-section-title">DCA Schedule — ${formatAmount(Math.round(monthly), state.currency)}/month over ${totalMonths} months</div>
+          <div style="overflow-x:auto">
+            <table class="companies-table dca-table">
+              <thead><tr><th>Period</th><th>Monthly Buy</th><th>Cumulative</th></tr></thead>
+              <tbody>${rows}</tbody>
+            </table>
+          </div>
+          ${note}`;
+      })()
+    : '';
+
+  return `
+    <div class="card-section-title">Where to Invest — ${amtLabel} breakdown</div>
+    <div style="overflow-x:auto">
+      <table class="companies-table">
+        <thead><tr><th>Ticker</th><th>Company</th><th>Invest</th><th>Exp. Return</th><th>Conviction</th><th>Thesis</th></tr></thead>
+        <tbody>${companiesHTML}</tbody>
+      </table>
+    </div>
+    ${dcaHTML}
+    <div class="card-section-title">Projected Growth — ${state.horizon} horizon (Bear / Base / Bull)</div>
+    ${scenarioRow('Bear', 'bear', bearPct)}
+    ${scenarioRow('Base', 'base', basePct)}
+    ${scenarioRow('Bull', 'bull', bullPct)}
+  `;
+}
+
+function renderCountryCard(code, d) {
+  const c        = COUNTRIES.find(x => x.code === code);
+  const outlook  = (d.outlook || 'Neutral').toLowerCase();
+  const badgeCls = outlook.includes('bull') ? 'badge-bullish' : outlook.includes('bear') ? 'badge-bearish' : 'badge-neutral';
+  const allocPct = d.suggestedAllocationPct || 0;
+  // Use raw amount initially — updateCardAllocations will replace with normalized amount
+  const countryAmt = (allocPct / 100) * state.amount;
+  const allocAmt   = formatDual(Math.round(countryAmt), state.currency, LOCAL_CURRENCY[code]);
+  const cachePill  = (() => {
+    if (!d.fromCache) return `<span class="cache-pill cache-live">Live</span>`;
+    const ageMs   = Date.now() - (d.cachedAt || d.timestamp || 0);
+    const ageDays = Math.floor(ageMs / 86400000);
+    const ageHrs  = Math.floor(ageMs / 3600000);
+    const ageText = ageDays >= 1 ? `${ageDays}d ago` : ageHrs >= 1 ? `${ageHrs}h ago` : 'just now';
+    return `<span class="cache-pill cache-cached" title="Cached ${ageText}">Cached · ${ageText}</span>`;
+  })();
+
+  const hasCurrencyRisk = LOCAL_CURRENCY[code] && LOCAL_CURRENCY[code] !== state.currency;
+  const currencyBadge   = hasCurrencyRisk
+    ? `<span class="currency-risk-badge">FX Risk: ${LOCAL_CURRENCY[code]}/${state.currency}</span>` : '';
+  const currencyNote    = hasCurrencyRisk && d.currencyRisk
+    ? `<div class="currency-risk-note">${d.currencyRisk}</div>` : '';
+
+  const sectorList = d.sectors || [];
+  const sectorN    = sectorList.length || 1;
+  const barW       = Math.round(100 / sectorN);
+  const sectors    = sectorList.map(s => `
+    <div class="sector-bar-row">
+      <div class="sector-bar-name">${s.name}</div>
+      <div class="sector-bar-track"><div class="sector-bar-fill" style="width:${barW}%"></div></div>
+      <div class="sector-bar-pct">${barW}%</div>
+      ${s.reason ? `<div class="sector-bar-reason">${s.reason}</div>` : ''}
+    </div>`).join('');
+
+  const risks = (d.risks || []).map(r => `<li>${r}</li>`).join('');
+
+  const cardEl = document.getElementById(`card-${code}`);
+  cardEl.innerHTML = `
+    <div class="card-header">
+      <span class="card-flag">${d.flag || c.flag}</span>
+      <div class="card-title-group">
+        <div class="card-country-name">${d.country || c.name}</div>
+        <div class="card-exchange">${d.exchange || c.exchange}</div>
+      </div>
+      <div class="card-badges">
+        <span class="badge ${badgeCls}">${d.outlook || 'Neutral'}</span>
+        ${buildConfidenceRing(d.confidence)}
+        <span class="card-alloc" id="card-alloc-${code}">${allocPct}% · ${allocAmt}</span>
+        ${currencyBadge}
+        ${cachePill}
+        <button class="card-collapse-btn" onclick="toggleCard('${code}')" title="Collapse / expand">▾</button>
+      </div>
+    </div>
+    <div class="card-body">
+      <p class="card-summary">${d.summary || ''}</p>
+      ${d.whyNow ? `<div class="card-why-now">${d.whyNow}</div>` : ''}
+      ${currencyNote}
+      <div class="card-section-title">Sectors</div>
+      <div class="sector-bars">${sectors}</div>
+      <div id="card-invest-${code}">${buildInvestSection(code, d, countryAmt)}</div>
+      <div class="card-section-title">Key Risks</div>
+      <ul class="risks-list">${risks}</ul>
+    </div>
+    <div class="card-footer">
+      <span class="entry-strategy">Entry: <strong>${d.entryStrategy || 'Phased'}</strong></span>
+      <span style="font-size:.75rem;color:var(--ink3)">Horizon: ${d.horizon || state.horizon} · ${d.riskProfile || state.riskProfile}</span>
+      <div class="card-footer-actions">
+        <button class="copy-card-btn" onclick="copyCardSummary('${code}')" title="Copy analysis to clipboard">⎘ Copy</button>
+        <button class="copy-card-btn" onclick="exportCardCSV('${code}')" title="Download companies as CSV">⬇ CSV</button>
+        <button class="refresh-card-btn" onclick="refreshCountry('${code}')" title="Force a fresh analysis (bypasses cache)">↺ Refresh</button>
+      </div>
+    </div>
+  `;
+  // Colour-coded left border + fade-in animation
+  cardEl.classList.remove('outlook-bullish', 'outlook-bearish', 'outlook-neutral', 'card-appeared');
+  void cardEl.offsetWidth; // force reflow so animation re-triggers on refresh
+  cardEl.classList.add(
+    outlook.includes('bull') ? 'outlook-bullish' : outlook.includes('bear') ? 'outlook-bearish' : 'outlook-neutral',
+    'card-appeared'
+  );
+}
+
+function renderErrorCard(code, message) {
+  const c = COUNTRIES.find(x => x.code === code);
+  document.getElementById(`card-${code}`).innerHTML = `
+    <div class="card-header">
+      <span class="card-flag">${c.flag}</span>
+      <div class="card-title-group">
+        <div class="card-country-name">${c.name}</div>
+        <div class="card-exchange">${c.exchange}</div>
+      </div>
+      <div class="card-badges">
+        <button class="card-collapse-btn" onclick="toggleCard('${code}')" title="Collapse / expand">▾</button>
+      </div>
+    </div>
+    <div class="card-error">
+      <span class="error-icon">⚠</span>
+      <div class="error-text">
+        <h4>Analysis Unavailable</h4>
+        <p>${message}</p>
+        <button class="retry-btn" onclick="retryCountry('${code}')">↺ Retry</button>
+      </div>
+    </div>
+  `;
+}
+
+function toggleCard(code) {
+  document.getElementById('card-' + code).classList.toggle('collapsed');
+}
+
+async function retryCountry(code) {
+  const card = document.getElementById('card-' + code);
+  const c    = COUNTRIES.find(x => x.code === code);
+  card.innerHTML = `
+    <div class="card-header">
+      <span class="card-flag">${c.flag}</span>
+      <div class="card-title-group">
+        <div class="card-country-name">${c.name}</div>
+        <div class="card-exchange">${c.exchange}</div>
+      </div>
+    </div>
+    <div class="card-loading">
+      <div class="spinner"></div>
+      <div style="font-size:.85rem;font-weight:500;color:var(--ink2);margin-bottom:.5rem">Retrying ${c.name}…</div>
+    </div>
+  `;
+  try {
+    // Clear local cache so we force a fresh fetch
+    const cacheKey = `meridian_${code}_${state.horizon}_${state.riskProfile.toLowerCase()}`;
+    localStorage.removeItem(cacheKey);
+    const data = await analyseCountry(code);
+    state.results[code] = data;
+    renderCountryCard(code, data);
+    renderPortfolioSummary(state.lastOptimizedData);
+  } catch (err) {
+    renderErrorCard(code, err.message);
+  }
+}
+
+async function refreshCountry(code) {
+  // Clear both localStorage and server-side cache key, then re-fetch
+  const cacheKey = `meridian_${code}_${state.horizon}_${state.riskProfile.toLowerCase()}`;
+  localStorage.removeItem(cacheKey);
+  const card = document.getElementById('card-' + code);
+  const c    = COUNTRIES.find(x => x.code === code);
+  // Show spinner inside existing card shape
+  card.innerHTML = `
+    <div class="card-header">
+      <span class="card-flag">${c.flag}</span>
+      <div class="card-title-group">
+        <div class="card-country-name">${c.name}</div>
+        <div class="card-exchange">${c.exchange}</div>
+      </div>
+    </div>
+    <div class="card-loading">
+      <div class="spinner"></div>
+      <div style="font-size:.85rem;font-weight:500;color:var(--ink2);margin-bottom:.5rem">Refreshing ${c.name}…</div>
+    </div>
+  `;
+  try {
+    const data = await analyseCountry(code);
+    state.results[code] = data;
+    renderCountryCard(code, data);
+    renderPortfolioSummary(state.lastOptimizedData);
+  } catch (err) {
+    renderErrorCard(code, err.message);
+  }
+}
+
+function updateProgress(done, total, fetchingName) {
+  document.getElementById('progress-count').textContent = `${done} / ${total}`;
+  document.getElementById('progress-bar').style.width = total > 0 ? `${(done / total) * 100}%` : '0%';
+
+  const titleEl = document.getElementById('progress-title');
+  if (fetchingName) {
+    titleEl.textContent = `Analysing ${fetchingName}`;
+    document.title = `⏳ ${total > 1 ? `0/${total}` : '…'} — MERIDIAN`;
+  } else {
+    document.title = `⏳ ${done}/${total} — MERIDIAN`;
+    if (done >= total && total > 0) {
+      titleEl.textContent = 'Analysing Markets';
+      document.title = 'MERIDIAN — Investment Intelligence';
+      setTimeout(() => { document.getElementById('progress-wrap').style.display = 'none'; }, 800);
+    }
+  }
+}
+
+// ── Portfolio Optimization ───────────────────────────────
+async function optimizePortfolio() {
+  if (state.selectedCountries.length <= 1) return null;
+
+  const markets = Object.entries(state.results)
+    .filter(([, d]) => d && d.outlook)
+    .map(([code, d]) => ({
+      code,
+      outlook:               d.outlook,
+      confidence:            d.confidence,
+      expectedAnnualReturnPct: d.expectedAnnualReturnPct,
+    }));
+
+  if (markets.length < 2) return null;
+
+  try {
+    const optCtrl = new AbortController();
+    const optTimer = setTimeout(() => optCtrl.abort(), 30000);
+    const res  = await fetch(`${API_BASE}/api/optimize`, {
+      method:  'POST',
+      headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${state.token}` },
+      body:    JSON.stringify({ markets, horizon: state.horizon, riskProfile: state.riskProfile.toLowerCase() }),
+      signal:  optCtrl.signal,
+    });
+    clearTimeout(optTimer);
+    const data = await res.json();
+    return data.success ? data : null;
+  } catch { return null; }
+}
+
+// ── Portfolio Summary + Donut ────────────────────────────
+function renderComparisonTable(entries) {
+  const container = document.getElementById('comparison-table-container');
+  if (!container || entries.length < 2) { if (container) container.innerHTML = ''; return; }
+  const rows = entries.map(([code, d]) => {
+    const c       = COUNTRIES.find(x => x.code === code);
+    const outlook = (d.outlook || 'Neutral').toLowerCase();
+    const badgeCls = outlook.includes('bull') ? 'badge-bullish' : outlook.includes('bear') ? 'badge-bearish' : 'badge-neutral';
+    const expRet  = d.expectedAnnualReturnPct != null ? `+${d.expectedAnnualReturnPct}%` : '–';
+    const bear    = d.bearReturnPct != null ? `${d.bearReturnPct}%` : '–';
+    const base    = d.baseReturnPct != null  ? `+${d.baseReturnPct}%` : '–';
+    const bull    = d.bullReturnPct != null  ? `+${d.bullReturnPct}%` : '–';
+    return `<tr>
+      <td class="ct-country">${d.flag || c?.flag || ''} ${d.country || c?.name || code}</td>
+      <td><span class="badge ${badgeCls}">${d.outlook || 'Neutral'}</span></td>
+      <td class="ct-conf">${d.confidence != null ? d.confidence + '%' : '–'}</td>
+      <td class="ct-return">${expRet} p.a.</td>
+      <td class="ct-scenarios">${bear} / ${base} / ${bull}</td>
+    </tr>`;
+  }).join('');
+  container.innerHTML = `
+    <div class="comparison-section">
+      <div class="comparison-section-title">Market Comparison</div>
+      <table class="comparison-table">
+        <thead><tr>
+          <th>Market</th><th>Outlook</th><th>Confidence</th><th>Est. Return</th><th>Bear / Base / Bull</th>
+        </tr></thead>
+        <tbody>${rows}</tbody>
+      </table>
+    </div>`;
+}
+
+function renderPortfolioSummary(optimizedData = null) {
+  const entries = Object.entries(state.results).filter(([, d]) => d && d.outlook);
+  if (entries.length === 0) return;
+  renderComparisonTable(entries);
+
+  let allocs;
+  if (optimizedData?.allocations?.length) {
+    // Use Claude's optimized allocation
+    allocs = optimizedData.allocations
+      .map(a => ({ ...a, data: state.results[a.code], country: COUNTRIES.find(x => x.code === a.code) }))
+      .filter(a => a.data);
+    // Renormalize in case Claude's sum is slightly off
+    const sum = allocs.reduce((s, a) => s + a.allocationPct, 0);
+    if (sum > 0) allocs = allocs.map(a => ({ ...a, pct: Math.round((a.allocationPct / sum) * 100) }));
+    else allocs = allocs.map(a => ({ ...a, pct: Math.round(100 / allocs.length) }));
+  } else {
+    // Fallback: normalize Claude's per-country suggestions
+    const rawTotal = entries.reduce((s, [, d]) => s + (d.suggestedAllocationPct || 0), 0);
+    allocs = entries.map(([code, d]) => ({
+      code,
+      country:   COUNTRIES.find(x => x.code === code),
+      data:      d,
+      pct:       rawTotal > 0 ? Math.round((d.suggestedAllocationPct / rawTotal) * 100) : Math.round(100 / entries.length),
+      rationale: null,
+    }));
+  }
+
+  const totalAmt       = state.amount;
+  const formattedTotal = formatAmount(totalAmt, state.currency);
+
+  const legendHTML = allocs.map((a, i) => {
+    const amt = formatAmount(Math.round((a.pct / 100) * totalAmt), state.currency);
+    return `
+      <div class="legend-item" style="flex-wrap:wrap">
+        <div class="legend-dot" style="background:${CHART_COLORS[i % CHART_COLORS.length]}"></div>
+        <span class="legend-country">${a.country?.flag || ''} ${a.country?.name || a.code}</span>
+        <span class="legend-pct">${a.pct}%</span>
+        <span class="legend-amt">${amt}</span>
+        ${a.rationale ? `<span class="legend-rationale">${a.rationale}</span>` : ''}
+      </div>
+    `;
+  }).join('');
+
+  const svgDonut = drawDonutChart(allocs);
+  updateCardAllocations(allocs);
+
+  // Combined portfolio forecast — weighted-average return
+  const weightedReturn = allocs.reduce((sum, a) => {
+    const ret = a.data.expectedAnnualReturnPct || 10;
+    return sum + (a.pct / 100) * ret;
+  }, 0);
+  const pfPoints  = calcForecastPoints(totalAmt, weightedReturn, state.horizon);
+  const pfFinalV  = pfPoints.length ? pfPoints[pfPoints.length - 1].value : totalAmt;
+  const pfGainPct = totalAmt > 0 ? ((pfFinalV - totalAmt) / totalAmt * 100).toFixed(1) : '0';
+  const pfBars    = renderForecastBars(pfPoints, totalAmt, 'pf-forecast-bars');
+
+  document.getElementById('portfolio-summary-container').innerHTML = `
+    <div class="portfolio-summary">
+      <h2>Portfolio Allocation</h2>
+      <p class="portfolio-subtitle">${state.horizon} horizon · ${state.riskProfile} risk · ${allocs.length} market${allocs.length > 1 ? 's' : ''} ${optimizedData ? '· AI-optimised' : ''}</p>
+      ${optimizedData?.optimizationNote ? `<div class="opt-note">${optimizedData.optimizationNote}</div>` : ''}
+      <div class="portfolio-layout">
+        <div class="donut-wrap">
+          ${svgDonut}
+          <div class="donut-center">
+            <div class="donut-amount">${formattedTotal}</div>
+            <div class="donut-label">Total</div>
+          </div>
+        </div>
+        <div class="portfolio-legend">${legendHTML}</div>
+      </div>
+      <div class="pf-forecast">
+        <div class="pf-forecast-title">Combined Portfolio Projection — ${state.horizon} horizon</div>
+        <div class="pf-forecast-summary">
+          ${formattedTotal} → <strong>${formatAmount(Math.round(pfFinalV), state.currency)}</strong>
+          <span style="color:${pfGainPct >= 0 ? '#2e7d52' : '#c0392b'};font-weight:600">(+${pfGainPct}%)</span>
+          · Weighted avg. return ${weightedReturn.toFixed(1)}% p.a.
+        </div>
+        ${pfBars}
+      </div>
+    </div>
+  `;
+}
+
+function drawDonutChart(allocs) {
+  const size   = 180;
+  const cx     = size / 2;
+  const cy     = size / 2;
+  const R      = 72;
+  const r      = 50;
+  const gap    = 2;
+  let   angle  = -90;
+  const paths  = [];
+
+  allocs.forEach((a, i) => {
+    const sweep     = (a.pct / 100) * 360;
+    const safeAngle = Math.max(sweep - gap, 0.001);
+    const startRad  = (angle * Math.PI) / 180;
+    const endRad    = ((angle + safeAngle) * Math.PI) / 180;
+    const x1 = cx + R * Math.cos(startRad);
+    const y1 = cy + R * Math.sin(startRad);
+    const x2 = cx + R * Math.cos(endRad);
+    const y2 = cy + R * Math.sin(endRad);
+    const ix1 = cx + r * Math.cos(startRad);
+    const iy1 = cy + r * Math.sin(startRad);
+    const ix2 = cx + r * Math.cos(endRad);
+    const iy2 = cy + r * Math.sin(endRad);
+    const large = safeAngle > 180 ? 1 : 0;
+    const color = CHART_COLORS[i % CHART_COLORS.length];
+    paths.push(
+      `<path d="M${x1},${y1} A${R},${R} 0 ${large},1 ${x2},${y2} L${ix2},${iy2} A${r},${r} 0 ${large},0 ${ix1},${iy1} Z" fill="${color}" opacity=".92"/>`
+    );
+    angle += sweep;
+  });
+
+  return `<svg viewBox="0 0 ${size} ${size}" width="${size}" height="${size}">${paths.join('')}</svg>`;
+}
+
+// ── Forecast helpers ─────────────────────────────────────
+function calcForecastPoints(amount, annualReturnPct, horizonStr) {
+  const rate    = (annualReturnPct || 8) / 100;
+  const months  = { '6m': 6, '1y': 12, '2y': 24, '3y': 36, '4y': 48, '5y': 60, '10y': 120 }[horizonStr] || 12;
+  const points  = [];
+
+  if (months <= 6) {
+    for (let m = 1; m <= months; m++)
+      points.push({ label: `M${m}`, value: amount * Math.pow(1 + rate, m / 12) });
+  } else if (months <= 24) {
+    const quarters = months / 3;
+    for (let q = 1; q <= quarters; q++)
+      points.push({ label: `Q${q}`, value: amount * Math.pow(1 + rate, (q * 3) / 12) });
+  } else {
+    const years = months / 12;
+    for (let y = 1; y <= years; y++)
+      points.push({ label: `Y${y}`, value: amount * Math.pow(1 + rate, y) });
+  }
+  return points;
+}
+
+function renderForecastBars(points, baseAmount, extraClass = '') {
+  if (!points.length) return '';
+  const maxVal    = Math.max(...points.map(p => p.value));
+  const BAR_MAX   = 70;
+  const showVals  = points.length <= 6; // hide value labels when too many bars to avoid overlap
+  const bars = points.map(p => {
+    const h   = Math.max(Math.round((p.value / maxVal) * BAR_MAX), 4);
+    const tip = formatAmount(Math.round(p.value), state.currency);
+    return `<div class="forecast-bar-wrap">
+      ${showVals ? `<div class="forecast-bar-val">${tip}</div>` : ''}
+      <div class="forecast-bar" style="height:${h}px" title="${p.label}: ${tip}"></div>
+      <div class="forecast-bar-label">${p.label}</div>
+    </div>`;
+  }).join('');
+  return `<div class="forecast-bars ${extraClass}">${bars}</div>`;
+}
+
+// ── Setup persistence ────────────────────────────────────
+function saveSetupState() {
+  try {
+    localStorage.setItem('meridian_setup', JSON.stringify({
+      amount:            state.amount,
+      currency:          state.currency,
+      horizon:           state.horizon,
+      riskProfile:       state.riskProfile,
+      selectedCountries: state.selectedCountries,
+    }));
+  } catch {}
+}
+
+function loadSetupState() {
+  try {
+    const saved = JSON.parse(localStorage.getItem('meridian_setup') || '{}');
+    if (saved.amount)            state.amount            = saved.amount;
+    if (saved.currency)          state.currency          = saved.currency;
+    if (saved.horizon)           state.horizon           = saved.horizon;
+    if (saved.riskProfile)       state.riskProfile       = saved.riskProfile;
+    if (saved.selectedCountries) state.selectedCountries = saved.selectedCountries;
+  } catch {}
+}
+
+// ── Normalize all card amounts after portfolio summary ────
+function updateCardAllocations(allocs) {
+  allocs.forEach(a => {
+    const normalizedAmt = Math.round((a.pct / 100) * state.amount);
+
+    // Update alloc badge in header
+    const badge = document.getElementById(`card-alloc-${a.code}`);
+    if (badge) badge.innerHTML = `${a.pct}% · ${formatDual(normalizedAmt, state.currency, LOCAL_CURRENCY[a.code])}`;
+
+    // Rebuild the entire invest section (company table + forecast) with correct amount
+    const investEl = document.getElementById(`card-invest-${a.code}`);
+    if (investEl && a.data) {
+      investEl.innerHTML = buildInvestSection(a.code, a.data, normalizedAmt);
+    }
+  });
+}
+
+// ── Rate limit status ────────────────────────────────────
+async function fetchStatus() {
+  try {
+    const res  = await fetch(`${API_BASE}/api/status`, {
+      headers: { 'Authorization': `Bearer ${state.token}` },
+    });
+    const data = await res.json();
+    if (!data.success) return;
+    const el = document.getElementById('rate-badge');
+    if (el) el.textContent = `${data.remaining}/${data.max} analyses left today`;
+  } catch {}
+}
+
+// ── Cache helpers ────────────────────────────────────────
+function getCache(key) {
+  try {
+    const raw = localStorage.getItem(key);
+    if (!raw) return null;
+    const obj = JSON.parse(raw);
+    if (Date.now() - (obj.cachedAt || 0) > CACHE_TTL) { localStorage.removeItem(key); return null; }
+    return obj;
+  } catch { return null; }
+}
+
+function setCache(key, data) {
+  try { localStorage.setItem(key, JSON.stringify({ ...data, cachedAt: Date.now() })); } catch {}
+}
+
+// ── Formatting helpers ───────────────────────────────────
+function formatAmount(amount, currencyCode) {
+  const sym = CURRENCY_SYMBOLS[currencyCode] || CURRENCIES.find(c => c.code === currencyCode)?.symbol || '$';
+  const num = Math.round(amount);
+  const fmt = num.toLocaleString('en-US');
+  return `${sym}${fmt}`;
+}
+
+// ── FX rates + dual currency ─────────────────────────────
+async function fetchFXRates() {
+  // Skip if rates are less than 6 hours old
+  if (state.fxRates && state.fxRatesAt && Date.now() - state.fxRatesAt < 6 * 3600000) return;
+  try {
+    const res  = await fetch('https://api.frankfurter.app/latest?from=USD');
+    const data = await res.json();
+    state.fxRates          = { ...(data.rates || {}), USD: 1 };
+    state.fxRatesAt        = Date.now();
+  } catch { /* graceful — formatDual falls back to primary only */ }
+}
+
+function convertAmount(amount, fromCode, toCode) {
+  if (!state.fxRates || fromCode === toCode) return amount;
+  const toUSD   = fromCode === 'USD' ? 1 : 1 / (state.fxRates[fromCode] || 1);
+  const usdToTo = state.fxRates[toCode] || 1;
+  return amount * toUSD * usdToTo;
+}
+
+function formatDual(amount, userCurrency, localCurrCode) {
+  const primary = formatAmount(Math.round(amount), userCurrency);
+  if (!localCurrCode || localCurrCode === userCurrency || !state.fxRates) return primary;
+  const localAmt = convertAmount(amount, userCurrency, localCurrCode);
+  const localFmt = formatAmount(Math.round(localAmt), localCurrCode);
+  return `${primary}<span class="dual-currency">≈ ${localFmt}</span>`;
+}
+
+// ── History browser ──────────────────────────────────────
+function openHistory() {
+  const entries = [];
+  for (let i = 0; i < localStorage.length; i++) {
+    const key = localStorage.key(i);
+    if (!key || !key.startsWith('meridian_')) continue;
+    if (key === 'meridian_theme' || key === 'meridian_setup') continue;
+    const inner = key.slice('meridian_'.length);
+    const parts = inner.split('_');
+    if (parts.length < 3) continue;
+    try {
+      const obj = JSON.parse(localStorage.getItem(key));
+      if (!obj || !obj.cachedAt) continue;
+      entries.push({ key, code: parts[0], horizon: parts[1], risk: parts[2], cachedAt: obj.cachedAt, outlook: obj.outlook || 'Neutral', country: obj.country || parts[0], flag: obj.flag || '' });
+    } catch {}
+  }
+  entries.sort((a, b) => b.cachedAt - a.cachedAt);
+
+  const body = document.getElementById('history-body');
+  if (!entries.length) {
+    body.innerHTML = '<div class="history-empty">No cached analyses yet.<br>Run an analysis to populate history.</div>';
+  } else {
+    body.innerHTML = entries.map(e => {
+      const dt   = new Date(e.cachedAt);
+      const date = dt.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+      const time = dt.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' });
+      const ol   = (e.outlook || '').toLowerCase();
+      const cls  = ol.includes('bull') ? 'badge-bullish' : ol.includes('bear') ? 'badge-bearish' : 'badge-neutral';
+      return `<div class="history-entry" onclick="loadHistoryEntry('${e.key}')">
+        <div class="history-entry-top">
+          <span class="history-entry-name">${e.flag} ${e.country}</span>
+          <span class="badge ${cls}" style="font-size:.63rem;padding:.15rem .4rem">${e.outlook}</span>
+        </div>
+        <div class="history-entry-meta">${e.horizon} · ${e.risk} · ${date} ${time}</div>
+      </div>`;
+    }).join('');
+  }
+  document.getElementById('history-overlay').classList.add('open');
+}
+
+function closeHistory(e) {
+  if (e && e.target !== document.getElementById('history-overlay')) return;
+  document.getElementById('history-overlay').classList.remove('open');
+}
+
+function loadHistoryEntry(key) {
+  try {
+    const obj   = JSON.parse(localStorage.getItem(key));
+    if (!obj) return;
+    const inner = key.slice('meridian_'.length);
+    const parts = inner.split('_');
+    if (parts.length < 3) return;
+    const [code, horizon, risk] = parts;
+
+    // Horizon
+    document.querySelectorAll('.horizon-pill').forEach(p => {
+      p.classList.toggle('selected', p.dataset.value === horizon);
+    });
+    state.horizon = horizon;
+
+    // Risk
+    const riskNorm = RISK_PROFILES.find(r => r.toLowerCase() === risk.toLowerCase()) || 'Balanced';
+    document.querySelectorAll('.risk-btn').forEach(b => {
+      b.classList.toggle('active', b.dataset.value === riskNorm);
+    });
+    state.riskProfile = riskNorm;
+
+    // Country
+    state.selectedCountries = [code];
+    document.querySelectorAll('.country-card').forEach(card => {
+      card.classList.toggle('selected', card.dataset.code === code);
+    });
+
+    document.getElementById('history-overlay').classList.remove('open');
+    showScreen('setup');
+    showToast(`Loaded ${obj.country || code} — click Analyse to view`);
+  } catch {}
+}
+
+// ── UI helpers ───────────────────────────────────────────
+function showScreen(name) {
+  document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+  document.getElementById(`screen-${name}`).classList.add('active');
+}
+
+let toastTimer;
+function showToast(msg) {
+  const el = document.getElementById('toast');
+  el.textContent = msg;
+  el.classList.add('show');
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => el.classList.remove('show'), 3000);
+}
+
+// ── Copy card summary to clipboard ───────────────────────
+function copyCardSummary(code) {
+  const d = state.results[code];
+  if (!d) return;
+  const c = COUNTRIES.find(x => x.code === code);
+  const lines = [
+    `MERIDIAN — ${d.country || c?.name} Analysis`,
+    `Date: ${new Date().toLocaleDateString('en-US', { year:'numeric', month:'long', day:'numeric' })}`,
+    ``,
+    `Outlook: ${d.outlook} (${d.confidence}% confidence) | Exchange: ${d.exchange}`,
+    ``,
+    d.summary || '',
+    ``,
+    d.whyNow ? `Why Now: ${d.whyNow}` : null,
+    ``,
+    `Returns (p.a.): Expected ${d.expectedAnnualReturnPct}% | Bear ${d.bearReturnPct}% | Bull ${d.bullReturnPct}%`,
+    d.currencyRisk ? `Currency Risk: ${d.currencyRisk}` : null,
+    ``,
+    `Top Sectors: ${(d.sectors || []).map(s => s.name).join(', ')}`,
+    ``,
+    `Recommended Companies:`,
+    ...(d.companies || []).map(co =>
+      `  • ${co.ticker} — ${co.name} | ${co.allocationPct}% | ${co.expectedAnnualReturnPct}% p.a. | ${co.conviction} conviction`
+    ),
+    ``,
+    `Key Risks: ${(d.risks || []).join('; ')}`,
+    ``,
+    `Entry: ${d.entryStrategy} | Portfolio Allocation: ${d.suggestedAllocationPct}%`,
+    ``,
+    `Generated by MERIDIAN`,
+  ].filter(l => l !== null && l !== undefined);
+  copyToClipboard(lines.join('\n'))
+    .then(() => showToast('Analysis copied to clipboard'))
+    .catch(() => showToast('Copy failed — please try again'));
+}
+
+// ── Confidence SVG ring ───────────────────────────────────
+function buildConfidenceRing(confidence) {
+  const pct   = Math.min(100, Math.max(0, confidence || 0));
+  const r     = 16;
+  const circ  = 2 * Math.PI * r;
+  const dash  = (pct / 100) * circ;
+  const color = pct >= 70 ? 'var(--green)' : pct >= 45 ? 'var(--gold)' : 'var(--red)';
+  return `
+    <div class="confidence-ring" title="${pct}% analyst confidence">
+      <svg width="46" height="46" viewBox="0 0 46 46">
+        <circle cx="23" cy="23" r="${r}" fill="none" stroke="var(--bg2)" stroke-width="3.5"/>
+        <circle cx="23" cy="23" r="${r}" fill="none" stroke="${color}" stroke-width="3.5"
+          stroke-dasharray="${dash.toFixed(1)} ${circ.toFixed(1)}"
+          transform="rotate(-90 23 23)" stroke-linecap="round"/>
+        <text x="23" y="20" text-anchor="middle" font-family="IBM Plex Mono,monospace"
+          font-size="9.5" font-weight="600" fill="${color}">${pct}%</text>
+        <text x="23" y="30" text-anchor="middle" font-family="IBM Plex Sans,sans-serif"
+          font-size="6" fill="var(--ink3)" letter-spacing="0.8">CONF</text>
+      </svg>
+    </div>`;
+}
+
+// ── Dark mode ────────────────────────────────────────────
+function toggleTheme() {
+  const isDark = document.documentElement.getAttribute('data-theme') === 'dark';
+  if (isDark) {
+    document.documentElement.removeAttribute('data-theme');
+    localStorage.setItem('meridian_theme', 'light');
+    document.querySelectorAll('.theme-toggle').forEach(b => { b.textContent = '☾'; });
+  } else {
+    document.documentElement.setAttribute('data-theme', 'dark');
+    localStorage.setItem('meridian_theme', 'dark');
+    document.querySelectorAll('.theme-toggle').forEach(b => { b.textContent = '☀'; });
+  }
+}
+
+function applyTheme() {
+  if (localStorage.getItem('meridian_theme') === 'dark') {
+    document.documentElement.setAttribute('data-theme', 'dark');
+    document.querySelectorAll('.theme-toggle').forEach(b => { b.textContent = '☀'; });
+  }
+}
+
+// ── Shareable URL ─────────────────────────────────────────
+function loadFromURL() {
+  const params = new URLSearchParams(window.location.search);
+  if (!params.toString()) return;
+  const m = params.get('m');
+  const h = params.get('h');
+  const r = params.get('r');
+  const a = params.get('a');
+  const c = params.get('c');
+  if (m) state.selectedCountries = m.split(',').filter(code => COUNTRIES.find(x => x.code === code));
+  if (h && HORIZONS.find(x => x.value === h)) state.horizon = h;
+  if (r) { const match = RISK_PROFILES.find(x => x.toLowerCase() === r.toLowerCase()); if (match) state.riskProfile = match; }
+  if (a && !isNaN(parseFloat(a))) state.amount = parseFloat(a);
+  if (c && CURRENCIES.find(x => x.code === c)) state.currency = c;
+}
+
+function getShareURL() {
+  const url = new URL(window.location.href.split('?')[0]);
+  if (state.selectedCountries.length) url.searchParams.set('m', state.selectedCountries.join(','));
+  url.searchParams.set('h', state.horizon);
+  url.searchParams.set('r', state.riskProfile.toLowerCase());
+  url.searchParams.set('a', state.amount);
+  url.searchParams.set('c', state.currency);
+  return url.toString();
+}
+
+function copyToClipboard(text) {
+  if (navigator.clipboard && window.isSecureContext) {
+    return navigator.clipboard.writeText(text);
+  }
+  // HTTP fallback using execCommand
+  const el = document.createElement('textarea');
+  el.value = text;
+  el.style.cssText = 'position:fixed;opacity:0;pointer-events:none;';
+  document.body.appendChild(el);
+  el.focus(); el.select();
+  try { document.execCommand('copy'); document.body.removeChild(el); return Promise.resolve(); }
+  catch(e) { document.body.removeChild(el); return Promise.reject(e); }
+}
+
+function copyShareURL() {
+  copyToClipboard(getShareURL())
+    .then(() => showToast('Share link copied to clipboard'))
+    .catch(() => showToast('Copy failed — please try again'));
+}
+
+// ── CSV export ────────────────────────────────────────────
+function triggerDownload(filename, content, mime) {
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(new Blob([content], { type: mime }));
+  a.download = filename;
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(a.href);
+}
+
+function companiesToCSVRows(d, countryName) {
+  return (d.companies || []).map(co => [
+    countryName,
+    co.ticker  || '',
+    `"${(co.name    || '').replace(/"/g, '""')}"`,
+    co.exchange || '',
+    co.allocationPct || 0,
+    co.conviction || '',
+    co.expectedAnnualReturnPct || '',
+    co.dividendYield || 0,
+    `"${(co.reason  || '').replace(/"/g, '""')}"`,
+    `"${(co.valuationContext || '').replace(/"/g, '""')}"`,
+  ].join(','));
+}
+
+function exportCardCSV(code) {
+  const d = state.results[code];
+  if (!d?.companies?.length) return showToast('No company data to export');
+  const c = COUNTRIES.find(x => x.code === code);
+  const name = d.country || c?.name || code;
+  const header = 'Country,Ticker,Company,Exchange,Allocation%,Conviction,ExpReturn%,DivYield%,Thesis,Valuation';
+  const rows   = companiesToCSVRows(d, name);
+  triggerDownload(`meridian_${code}_${state.horizon}.csv`, [header, ...rows].join('\n'), 'text/csv');
+}
+
+function exportAllCSV() {
+  const entries = Object.entries(state.results).filter(([, d]) => d?.companies?.length);
+  if (!entries.length) return showToast('No analysis data to export');
+  const header = 'Country,Ticker,Company,Exchange,Allocation%,Conviction,ExpReturn%,DivYield%,Thesis,Valuation';
+  const rows   = entries.flatMap(([code, d]) => {
+    const c = COUNTRIES.find(x => x.code === code);
+    return companiesToCSVRows(d, d.country || c?.name || code);
+  });
+  triggerDownload(`meridian_all_${state.horizon}_${new Date().toISOString().slice(0,10)}.csv`, [header, ...rows].join('\n'), 'text/csv');
+}
+
+// ── Favicon helper ───────────────────────────────────────
+function setFavicon(type) {
+  const el = document.getElementById('favicon');
+  if (!el) return;
+  if (type === 'loading') {
+    el.href = `data:image/svg+xml,${encodeURIComponent('<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32"><rect width="32" height="32" rx="5" fill="#1a1710"/><circle cx="16" cy="16" r="9" fill="none" stroke="#c9a84c" stroke-width="3" stroke-dasharray="20 18" stroke-linecap="round"><animateTransform attributeName="transform" type="rotate" from="0 16 16" to="360 16 16" dur="0.9s" repeatCount="indefinite"/></circle></svg>')}`;
+  } else {
+    el.href = '/icon.svg';
+  }
+}
+
+// ── Boot ─────────────────────────────────────────────────
+init();
+</script>
+
+<div id="history-overlay" class="history-overlay" onclick="closeHistory(event)">
+  <div class="history-panel">
+    <div class="history-header">
+      <span class="history-title">Cached Analyses</span>
+      <button class="history-close" onclick="closeHistory()">×</button>
+    </div>
+    <div class="history-body" id="history-body"></div>
+  </div>
+</div>
+</body>
+</html>
