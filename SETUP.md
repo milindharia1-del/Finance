@@ -13,7 +13,6 @@
 ```bash
 git clone https://github.com/milindharia1-del/Finance.git
 cd Finance
-git checkout claude/meridian-investment-dashboard-Sfotm
 npm install
 ```
 
@@ -80,7 +79,7 @@ Expected health response: `{"status":"ok","version":"4.0.0",...}`
 
 ```bash
 cd Finance
-git pull origin claude/meridian-investment-dashboard-Sfotm
+git pull origin main
 pm2 restart meridian
 ```
 
